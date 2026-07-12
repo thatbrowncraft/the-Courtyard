@@ -92,10 +92,6 @@
     return VERSES_BY_CHAPTER[chapterNumber] || [];
   }
 
-  function getVersesForChapter(chapterNumber){
-    return VERSES_BY_CHAPTER[chapterNumber] || [];
-  }
-
   /* ---------------- arrival ritual ----------------
      First visit: the full choreographed sequence.
      Returning visits (within 7 days): fade straight into the homepage instead.

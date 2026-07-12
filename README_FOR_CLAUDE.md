@@ -21,7 +21,10 @@ messaging. If a feature idea nudges the person to do more, it's wrong for
 this app, no matter how good the engineering is.
 
 The app covers all 18 chapters / ~700 verses of the Gita. Chapter 1
-(47 verses) is fully written. Chapters 2–18 are placeholders.
+(47 verses) and Chapter 2 (72 verses) are fully written. Chapter 3 has
+also been written, in a separate Claude session outside this project's
+continuity — see the note at the end of §7 before treating it as verified.
+Chapters 4–18 are placeholders.
 
 ---
 
@@ -203,8 +206,31 @@ despair, without turning clinical.
 
 ## 7. Known open items (not this session's job, listed for continuity)
 
-- Chapters 2–18: not started. Chapter 2 (Sankhya Yoga) is the natural next
-  chapter — it's where Krishna's direct teaching begins.
+- **Chapter 2 (Sankhya Yoga, 72 verses)**: content written two sessions ago,
+  `data/chapters.json` metadata fixed in the Session 14 audit (see
+  CHANGELOG). Should now display correctly.
+- **Chapter 3 (Karma Yoga, 43 verses in the received text)**: the person
+  has reported this was written in a **separate Claude session**, outside
+  this project's continuity. `data/chapters.json`'s metadata for Chapter 3
+  was updated in the Session 14 audit based on the person's reported title
+  and the received text's canonical verse count (43) — **but this session
+  has still never actually opened `data/chapter-03.json` itself**. Its
+  content has not been checked against the schema in §4, the voice/tone
+  standard in §6, or the verification steps in §5, and its true array
+  length has not been confirmed to actually match 43. Treat the Chapter 3
+  *content* as unverified until a future session opens the file directly
+  and checks it — the metadata fix only addresses why the row displayed
+  "0 verses," not whether the file behind it is correct.
+- **Root cause of the "0 verses" display bug (Session 14)**: `app.js` was
+  not at fault — it was already fully data-driven (see §3). The actual
+  cause was that `data/chapters.json` had never actually been updated on
+  the live site; the file uploaded for the audit was byte-for-byte the
+  original 18-placeholder version, still showing `verseCount: 0` for every
+  chapter but Chapter 1. If verse counts silently reset to 0 again in the
+  future, check for a stale/cached `chapters.json` being served, or the
+  updated file simply not having been saved to the right path, before
+  assuming `app.js` broke again.
+- Chapters 4–18: not started.
 - `emotions`, `keywords`, `related` fields exist in Chapter 1 data but are
   unused by any template — mood-matching from the home screen, real search,
   and cross-referencing are all still open.

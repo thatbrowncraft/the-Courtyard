@@ -677,3 +677,90 @@ kanha-jis-courtyard/
 2. Future interface sessions should diff `styles.css` and the body HTML in `index.html` against the pre-session version (same technique used here) to confirm no unintended visual changes crept in.
 3. If/when local audio files are sourced, wire them through `assets/audio/` and update `AMBIENCE_SOURCES` in `app.js` — this was explicitly out of scope this session.
 
+## Session 14 — Chapter-loading audit: "0 verses" bug fixed (no redesign, no new features)
+
+### Scope
+The person reported that after adding `data/chapter-02.json` and
+`data/chapter-03.json` and uploading an "updated" `chapters.json`, the live
+site still showed Chapter 2 and Chapter 3 as "0 verses." Brief was to audit
+the entire chapter-loading system end to end, confirm `chapters.json` is the
+single source of truth, confirm `app.js` has no remaining hardcoded chapter
+data, and fix whatever was actually broken — without touching layout,
+styling, or any other application behavior.
+
+### Audit findings
+
+**`app.js` was already fully data-driven — it was not the cause of the bug.**
+- `renderChapters()` builds every chapter row purely from the fetched
+  `CHAPTERS` array (title, subtitle, `verseCount`) — no chapter numbers,
+  titles, or counts are hardcoded into the render logic.
+- `openChapter()` / `renderVerseList()` / `getVersesForChapter()` all look
+  up data by chapter number from what was fetched — none reference a
+  specific chapter's filename, title, or count literally.
+- `loadContent()` fetches `data/chapter-{NN}.json` for every chapter with a
+  non-zero `verseCount`, using zero-padded chapter numbers (`chapter-02.json`,
+  `chapter-03.json`, etc.) — confirmed this matches the actual filenames.
+- The one array that looks "hardcoded" — the 18-entry `CHAPTERS` fallback
+  near the top of the file — is intentional, documented fallback data used
+  **only if the `data/chapters.json` fetch itself fails** (e.g. no server,
+  network hiccup). This is existing, deliberate resilience behavior from
+  the Session 13 refactor (see README §2–§3), not a bug, and was left in
+  place — removing it would be a design change beyond this session's brief,
+  not a bug fix.
+- One piece of genuine dead code was found and removed: `getVersesForChapter`
+  was accidentally defined twice in a row, back to back, with identical
+  bodies. Removed the duplicate. Zero behavioral difference — JavaScript
+  function redeclarations simply overwrite, so the second copy was always
+  what ran; this is pure cleanup, confirmed via `node --check app.js`
+  (parses clean) and a full diff against the pre-session file (only those
+  four duplicate lines removed, nothing else touched).
+
+**The actual bug: `data/chapters.json` had never actually been updated.**
+The file uploaded for this audit, despite being described as "updated," was
+byte-for-byte identical to the original 18-placeholder file from the Session
+13 refactor — Chapter 2 and Chapter 3 both still had `title: "Chapter N"`,
+`subtitle: "Placeholder chapter — verses added later"`, and `verseCount: 0`.
+Confirmed this with a direct diff. Since `app.js` only fetches
+`data/chapter-{NN}.json` for chapters with a non-zero `verseCount` (by
+design — see §3 of the README), the two new verse files were sitting in
+`data/` unused, and the UI was correctly, faithfully rendering "0 verses"
+for both — because that's genuinely what the metadata said.
+
+### What changed
+- **`app.js`**: removed one duplicate function definition (see above). No
+  other line changed.
+- **`data/chapters.json`**: updated only the Chapter 2 and Chapter 3
+  entries:
+  - Chapter 2 → title `"Sankhya Yoga"`, real subtitle, `verseCount: 72`
+    (matches `data/chapter-02.json`'s actual array length, counted
+    directly).
+  - Chapter 3 → title `"Karma Yoga"`, real subtitle, `verseCount: 43`
+    (the received text's canonical count for this chapter — **not**
+    independently verified against the actual array length of
+    `data/chapter-03.json`, since that file wasn't available to this
+    session; see the flag in README §7).
+  - Chapters 1 and 4–18 are untouched — confirmed via diff against the
+    pre-session file.
+
+### Verification performed
+- `node --check app.js` — parses with no syntax errors after the cleanup.
+- Full diff of `app.js` against the pre-session version — only the four
+  duplicate lines removed, everything else byte-identical.
+- Full diff of `data/chapters.json` against the pre-session version — only
+  the Chapter 2 and Chapter 3 `title` / `subtitle` / `verseCount` fields
+  changed; every other chapter's entry is untouched.
+- Confirmed `data/chapter-02.json` parses as valid JSON and contains
+  exactly 72 verse objects, matching the new `verseCount`.
+- Did **not** independently verify `data/chapter-03.json`'s actual verse
+  count or schema — that file was not present for this session to check.
+  Flagged explicitly in README §7 as still-unverified content.
+
+### Suggestions for next session
+1. Open `data/chapter-03.json` directly, confirm it's exactly 43 verse
+   objects, and run it through the same schema/tone/verification checks
+   Chapter 1 and Chapter 2 went through, before treating it as trustworthy.
+2. If verse counts ever silently show 0 again after a metadata update, check
+   first for browser/server caching of the old `chapters.json` before
+   assuming the JS broke — this session's bug was a stale data file, not
+   application logic.
+3. Chapters 4–18 remain fully unwritten.
