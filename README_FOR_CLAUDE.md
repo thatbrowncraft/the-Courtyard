@@ -47,13 +47,9 @@ kanha-jis-courtyard/
                             data-loading layer at the top (see §3 below)
   config.json             — app-level settings (see §3)
   data/
-    chapters.json          — lightweight manifest only: an ordered array of chapter
-                            filenames (e.g. "chapter-01.json"). No title, subtitle,
-                            or verse count lives here anymore (see Session 15).
-    chapter-01.json         — self-contained: { id, title, subtitle, verses: [...] }.
-                            Verse count is never stored — always verses.length.
-    chapter-NN.json         — (future) one file per chapter that has real content,
-                            same self-contained shape
+    chapters.json          — metadata only for all 18 chapters (number, title, subtitle, verseCount)
+    chapter-01.json         — all 47 real verses for Chapter 1, full schema (see §4)
+    chapter-NN.json         — (future) one file per chapter that has real content
   assets/
     audio/, icons/, images/ — currently empty (see their own README.md for why); ambient
                               sound is streamed from remote CDN URLs today, no local audio yet
@@ -79,38 +75,47 @@ tension explicitly to the person rather than silently re-inlining anything.
 
 ## 3. How data loading works (`app.js`)
 
-**As of Session 15, `data/chapters.json` is a manifest only — no metadata.**
-There is exactly one place a chapter's title, subtitle, and id live: the
-chapter's own file. Verse count is never stored anywhere; it is always
-`verses.length`, computed at load time. This was a deliberate fix for
-metadata duplication/drift (see CHANGELOG → Session 15) — do not reintroduce
-title/subtitle/verseCount fields into `chapters.json`.
-
 Near the top of `app.js`:
 
 ```js
 let CONFIG = { version, appTitle, defaultTheme, defaultAmbience,
                 reducedMotionDefault, defaultVolume };  // fallback mirror of config.json
-const FALLBACK_MANIFEST = [ "chapter-01.json", ..., "chapter-18.json" ]; // used only if data/chapters.json can't be fetched
-let CHAPTERS = [];                                       // built fresh each load from per-chapter files
+let CHAPTERS = [ ...18 placeholder entries... ];         // fallback mirror of data/chapters.json
 let VERSES_BY_CHAPTER = {};                              // populated per-chapter from data/chapter-NN.json
 ```
 
-`loadContent()` is an async function that:
+**As of Session 15, chapter verse data is loaded lazily, not eagerly.**
+`loadContent()` (still called once from `init()`) now only:
 1. Fetches `config.json` and merges it over the fallback `CONFIG`.
-2. Fetches `data/chapters.json` — the manifest — and falls back to
-   `FALLBACK_MANIFEST` (18 filenames, `chapter-01.json`…`chapter-18.json`)
-   if that fetch fails.
-3. For every filename in the manifest, in order, fetches `data/{filename}`
-   and reads its own `id`, `title`, `subtitle`, and `verses` array directly
-   off that file. `verseCount` for that chapter is always `verses.length`.
-   If the fetch fails (file doesn't exist yet, or no server), that chapter
-   falls back to a placeholder row (`Chapter N` / "Placeholder chapter —
-   verses added later" / 0 verses) using its position in the manifest as
-   the chapter number.
-4. Every per-chapter fetch is independently try/caught, so one missing
-   chapter never breaks the others. The app never throws or shows a
-   broken UI, exactly as before.
+2. Fetches `data/chapters.json` and replaces the fallback `CHAPTERS` if it succeeds.
+
+It no longer fetches every chapter's verse file on startup. Instead,
+`loadChapterVerses(chapterNumber)` fetches `data/chapter-{NN}.json`
+(zero-padded) the first time that chapter is opened, caches the result in
+`VERSES_BY_CHAPTER[chapterNumber]`, and de-dupes concurrent requests for
+the same chapter via an in-flight promise map (`chapterLoadPromises`).
+`prefetchNextChapter(chapterNumber)` quietly warms chapter N+1 in the
+background right after chapter N finishes loading — never more than one
+chapter ahead, never the whole scripture. Every fetch (config, chapters
+index, and per-chapter) is independently try/caught: if a file is missing,
+or the page is opened without a server, the app silently falls back to its
+built-in defaults / empty states — it never throws or shows a broken UI.
+
+**Routing (also Session 15)**: the app now has real hash-based routes —
+`#/home`, `#/chapters`, `#/chapter/N`, `#/chapter/N/verse/M`, and `#/<view>`
+for the other top-level sections. `parseHash()` / `hashFor()` convert
+between the URL hash and a route object; `setRoute(route, opts)` is what
+every click calls; `goToRoute(route, opts)` is the single function that
+actually renders a route, whether reached by a click, a browser
+Back/Forward press, or the initial page load (`init()` now ends with
+`await goToRoute(parseHash(), {isRestore:true})` instead of always
+defaulting to Home). Refreshing mid-verse now fetches only that one
+chapter and restores exactly that verse. Reading progress
+(`{chapter, verse, ts}`) is saved to `localStorage` under `lastReading`
+every time a verse is opened, and Home shows a small dismissible
+"Continue your journey" card when that exists — see `renderContinueCard()`
+and the `#continueCard` markup in `index.html`. None of this touches
+`showView()` / `revealView()`, which are unchanged from Session 13.
 
 `init()` (the last thing in `app.js`) is now `async` and does
 `await loadContent()` before calling `renderChapters()`, `renderEmotions()`,
@@ -118,16 +123,13 @@ etc. Everything else in `init()` runs in the exact same order as before.
 
 **Adding Chapter 2 (or any chapter) requires zero changes to `app.js` or
 `index.html`.** Just:
-1. Add `data/chapter-02.json` in the self-contained shape:
-   `{ "id": 2, "title": "...", "subtitle": "...", "verses": [ ... ] }`
-   (verse objects follow the schema in §4).
-2. Make sure `"chapter-02.json"` is listed in `data/chapters.json` at the
-   right position (it already is, for all 18 chapters, as placeholders).
+1. Add `data/chapter-02.json` — an array of verse objects (see schema in §4).
+2. Update that chapter's entry in `data/chapters.json`: real `title`,
+   `subtitle`, and `verseCount` (matching the array length).
 
-That's the entire task — no separate metadata file to keep in sync.
-`renderChapters()`, `renderVerseList()`, `getVersesForChapter()`, and
-`renderVerseDetail()` already read this data generically — none of them
-reference a chapter number literally.
+That's the entire task. `renderChapters()`, `renderVerseList()`,
+`getVersesForChapter()`, and `renderVerseDetail()` already read this data
+generically — none of them reference a chapter number literally.
 
 A handful of `Storage.get(key, <literal default>)` calls were changed to
 `Storage.get(key, CONFIG.<field>)` (theme default, reduced-motion default,
@@ -260,3 +262,15 @@ despair, without turning clinical.
 - Audio currently streams from remote CDN URLs (Freesound), not from
   `assets/audio/` — that folder is reserved for a future move to local
   files, not yet done.
+- **The Session 15 "Continue your journey" card on Home now has a proper
+  `.continue-card` rule in `styles.css`** (added Session 16, once that file
+  was available) — no more inline styles except the `display:none` toggle,
+  which is controlled directly by `renderContinueCard()` in `app.js`. Not
+  yet visually confirmed in a live browser across all three themes
+  (Dusk/Night/Dawn), since none was available to test in.
+- The Session 15 routing/lazy-loading/reading-resume work was verified by
+  tracing code paths and running `node --check`, not by a live browser
+  session (none was available in that session's environment). A manual
+  browser smoke test — open a verse, refresh, confirm it restores; try
+  Back/Forward across chapters; try an invalid `#/chapter/999` URL — is
+  recommended before trusting it fully.

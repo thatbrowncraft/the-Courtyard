@@ -36,19 +36,13 @@
   ];
 
   /* ---------------- app configuration & content (data-driven) ----------------
-     CONFIG mirrors config.json. data/chapters.json is now only a lightweight
-     manifest — an ordered array of chapter filenames — with no title,
-     subtitle, or verse count of its own. Each data/chapter-NN.json is the
-     single source of truth for its own metadata (id, title, subtitle) and
-     its verses array; CHAPTERS (title/subtitle/verseCount for rendering) is
-     built entirely from what those files report, and verseCount is always
-     `verses.length` — never a separately stored number, so it can never
-     drift out of sync with the actual content.
-     The literals below are fallback defaults only — used if a fetch fails
-     (e.g. opened without a local server) — so behavior is identical to
-     before even without a network layer. Adding a new chapter never
-     requires touching this file: add data/chapter-NN.json (with its own
-     id/title/subtitle/verses) and list its filename in data/chapters.json. */
+     CONFIG mirrors config.json; CHAPTERS mirrors data/chapters.json; and each
+     chapter with real content is fetched from data/chapter-NN.json into
+     VERSES_BY_CHAPTER. The literal values below are fallback defaults only —
+     used if a fetch fails (e.g. opened without a local server) — so behavior
+     is identical to before even without a network layer. Adding a new chapter
+     never requires touching this file: add data/chapter-NN.json and give that
+     chapter a title/subtitle/verseCount in data/chapters.json. */
   let CONFIG = {
     version: '2.0.0',
     appTitle: "Kanha Ji's Courtyard",
@@ -57,10 +51,17 @@
     reducedMotionDefault: false,
     defaultVolume: 0.45
   };
-  // Fallback manifest, used only if data/chapters.json itself can't be fetched.
-  const FALLBACK_MANIFEST = Array.from({length:18}, (_,i)=>`chapter-${String(i+1).padStart(2,'0')}.json`);
-  let CHAPTERS = [];
+  let CHAPTERS = Array.from({length:18}, (_,i)=>({
+    number: i+1,
+    title: `Chapter ${i+1}`,
+    subtitle: 'Placeholder chapter — verses added later',
+    verseCount: 0
+  }));
   let VERSES_BY_CHAPTER = {};
+  // Tracks in-flight fetches per chapter number so a chapter is never
+  // requested twice at once (e.g. a fast double-click, or a prefetch
+  // racing a real open of the same chapter).
+  let chapterLoadPromises = {};
 
   async function fetchJSON(path){
     const res = await fetch(path);
@@ -68,6 +69,9 @@
     return res.json();
   }
 
+  /* Startup only loads config.json and the lightweight chapters index —
+     never the ~700-verse body of the Gita. Individual chapters are fetched
+     on demand by loadChapterVerses() below, the first time they're opened. */
   async function loadContent(){
     try{
       const config = await fetchJSON('config.json');
@@ -76,43 +80,60 @@
 
     if(CONFIG.appTitle) document.title = CONFIG.appTitle;
 
-    let manifest = FALLBACK_MANIFEST;
     try{
-      const fetched = await fetchJSON('data/chapters.json');
-      if(Array.isArray(fetched) && fetched.length) manifest = fetched;
-    }catch(e){ /* keep fallback manifest */ }
-
-    // For each filename in the manifest, load the chapter file and derive
-    // everything CHAPTERS/VERSES_BY_CHAPTER need from its own contents.
-    // A chapter that hasn't been written yet (file missing, or unreachable)
-    // falls back to a placeholder row — same as before — using its position
-    // in the manifest as the chapter number.
-    CHAPTERS = await Promise.all(manifest.map(async (filename, i)=>{
-      const positionalNumber = i+1;
-      try{
-        const chapter = await fetchJSON(`data/${filename}`);
-        const verses = Array.isArray(chapter.verses) ? chapter.verses : [];
-        const number = chapter.id != null ? chapter.id : positionalNumber;
-        if(verses.length) VERSES_BY_CHAPTER[number] = verses;
-        return {
-          number,
-          title: chapter.title || `Chapter ${number}`,
-          subtitle: chapter.subtitle || 'Placeholder chapter — verses added later',
-          verseCount: verses.length // always derived, never stored
-        };
-      }catch(e){
-        return {
-          number: positionalNumber,
-          title: `Chapter ${positionalNumber}`,
-          subtitle: 'Placeholder chapter — verses added later',
-          verseCount: 0
-        };
-      }
-    }));
+      const chapters = await fetchJSON('data/chapters.json');
+      if(Array.isArray(chapters) && chapters.length) CHAPTERS = chapters;
+    }catch(e){ /* keep fallback CHAPTERS */ }
   }
 
   function getVersesForChapter(chapterNumber){
     return VERSES_BY_CHAPTER[chapterNumber] || [];
+  }
+
+  /* Fetches data/chapter-NN.json the first time a chapter is needed, and
+     caches the result in VERSES_BY_CHAPTER so reopening it is instant and
+     never re-fetched. Concurrent requests for the same chapter (e.g. a
+     real open racing a background prefetch) share the same in-flight
+     promise instead of firing a duplicate request. A chapter whose verses
+     haven't been written yet (verseCount 0, or a failed/missing fetch)
+     resolves to an empty array and is not cached as a failure, so it can
+     be retried on a later attempt (e.g. after the person reconnects). */
+  async function loadChapterVerses(chapterNumber){
+    if(VERSES_BY_CHAPTER[chapterNumber]) return VERSES_BY_CHAPTER[chapterNumber];
+    if(chapterLoadPromises[chapterNumber]) return chapterLoadPromises[chapterNumber];
+
+    const ch = CHAPTERS.find(c => c.number === chapterNumber);
+    if(!ch || !ch.verseCount) return [];
+
+    const pad = n => String(n).padStart(2,'0');
+    const promise = (async ()=>{
+      try{
+        const verses = await fetchJSON(`data/chapter-${pad(chapterNumber)}.json`);
+        if(Array.isArray(verses) && verses.length){
+          VERSES_BY_CHAPTER[chapterNumber] = verses;
+          return verses;
+        }
+      }catch(e){ /* falls back to "hasn't been written yet" empty state */ }
+      return [];
+    })();
+
+    chapterLoadPromises[chapterNumber] = promise;
+    try{
+      return await promise;
+    } finally {
+      delete chapterLoadPromises[chapterNumber];
+    }
+  }
+
+  /* Quietly warms the next chapter in the background once the current one
+     has finished loading — never the whole scripture, just one chapter
+     ahead, and only if it isn't already cached or already loading. */
+  function prefetchNextChapter(chapterNumber){
+    const next = chapterNumber + 1;
+    const ch = CHAPTERS.find(c => c.number === next);
+    if(!ch || !ch.verseCount) return;
+    if(VERSES_BY_CHAPTER[next] || chapterLoadPromises[next]) return;
+    loadChapterVerses(next).catch(()=>{});
   }
 
   /* ---------------- arrival ritual ----------------
@@ -677,8 +698,117 @@
 
   document.body.addEventListener('click', (e)=>{
     const btn = e.target.closest('[data-view]');
-    if(btn) showView(btn.dataset.view);
+    if(btn) setRoute({ view: btn.dataset.view });
   });
+
+  /* ---------------- routing (refresh + back/forward persistence) ----------------
+     The URL hash is the single source of truth for "where am I": #/home,
+     #/chapters, #/chapter/N, #/chapter/N/verse/M, or #/<view> for the other
+     top-level sections (journal, stats, settings, search, collections,
+     meditation). Changing the hash is what actually moves the app — either
+     the browser does it (typing a URL, refreshing, Back/Forward, which fires
+     'hashchange') or setRoute() does it on the person's behalf when they
+     click something. Either way the same goToRoute() function ends up
+     driving the visible view, so there's exactly one path through the code
+     rather than two that could drift apart. */
+  const KNOWN_SIMPLE_VIEWS = ['home','chapters','search','collections','journal','meditation','stats','settings'];
+
+  function hashFor(route){
+    if(route.view === 'verses' && route.chapter) return `#/chapter/${route.chapter}`;
+    if(route.view === 'verse' && route.chapter && route.verse) return `#/chapter/${route.chapter}/verse/${route.verse}`;
+    if(KNOWN_SIMPLE_VIEWS.includes(route.view)) return `#/${route.view}`;
+    return '#/home';
+  }
+
+  function parseHash(){
+    const raw = location.hash.replace(/^#\/?/, '');
+    const parts = raw.split('/').filter(Boolean);
+    if(parts.length === 0) return { view: 'home' };
+
+    if(parts[0] === 'chapter'){
+      const chapterNumber = Number(parts[1]);
+      if(!chapterNumber || isNaN(chapterNumber)) return { view: 'home' }; // malformed — fall back gracefully
+      if(parts[2] === 'verse'){
+        const verseNumber = Number(parts[3]);
+        if(!verseNumber || isNaN(verseNumber)) return { view: 'verses', chapter: chapterNumber };
+        return { view: 'verse', chapter: chapterNumber, verse: verseNumber };
+      }
+      return { view: 'verses', chapter: chapterNumber };
+    }
+
+    if(KNOWN_SIMPLE_VIEWS.includes(parts[0])) return { view: parts[0] };
+    return { view: 'home' }; // unrecognized route — fall back gracefully rather than erroring
+  }
+
+  // Moves the app to a route. Normally this just updates the hash and lets
+  // the 'hashchange' listener below do the actual work, so a click and a
+  // Back-button press end up running identical code. {replace:true} is used
+  // for corrective redirects (e.g. an invalid chapter number) so the bad
+  // route doesn't itself become a Back-button stop.
+  function setRoute(route, opts){
+    opts = opts || {};
+    const hash = hashFor(route);
+    if(opts.replace){
+      history.replaceState(null, '', hash);
+      goToRoute(route);
+      return;
+    }
+    if(location.hash === hash){
+      goToRoute(route); // already there (e.g. re-clicking the open chapter) — just re-render
+      return;
+    }
+    location.hash = hash; // triggers 'hashchange' -> goToRoute
+  }
+
+  // Renders whatever a route points to. `isRestore` is true only for the
+  // very first route applied on page load, so a refreshed verse doesn't
+  // re-trigger the "verse opened" whisper/stat-increment that a fresh,
+  // deliberate open gets — the reading itself is still resumed either way.
+  async function goToRoute(route, opts){
+    opts = opts || {};
+    const isRestore = !!opts.isRestore;
+
+    if(route.view === 'verses'){
+      const ch = CHAPTERS.find(c => c.number === route.chapter);
+      if(!ch){ setRoute({ view: 'home' }, { replace: true }); return; }
+      currentChapterNumber = route.chapter;
+      await loadChapterVerses(route.chapter);
+      renderVerseList(ch);
+      showView('verses');
+      prefetchNextChapter(route.chapter);
+      return;
+    }
+
+    if(route.view === 'verse'){
+      const ch = CHAPTERS.find(c => c.number === route.chapter);
+      if(!ch){ setRoute({ view: 'home' }, { replace: true }); return; }
+      const verses = await loadChapterVerses(route.chapter);
+      const v = verses.find(item => item.verse === route.verse);
+      if(!v){ setRoute({ view: 'verses', chapter: route.chapter }, { replace: true }); return; }
+      currentChapterNumber = route.chapter;
+      renderVerseDetail(v);
+      showView('verse');
+      if(!isRestore){
+        const visited = Storage.get('versesVisited', 0);
+        Storage.set('versesVisited', visited + 1);
+        tuneDiya();
+        whisper('Take your time.');
+      }
+      saveReadingProgress(route.chapter, route.verse);
+      prefetchNextChapter(route.chapter);
+      return;
+    }
+
+    if(route.view === 'home'){
+      renderContinueCard();
+      if(!isRestore) showView('home'); // on restore, home is already what's on screen — no need to re-transition into it
+      return;
+    }
+
+    showView(route.view);
+  }
+
+  window.addEventListener('hashchange', ()=> goToRoute(parseHash()));
 
   /* ---------------- home / emotions ---------------- */
   const emotionGrid = document.getElementById('emotionGrid');
@@ -745,16 +875,6 @@
     `).join('');
   }
 
-  // Opens the verse list for a given chapter. Does NOT open any verse detail —
-  // that only happens when a verse row itself is clicked.
-  function openChapter(chapterNumber){
-    const ch = CHAPTERS.find(c => c.number === chapterNumber);
-    if(!ch) return;
-    currentChapterNumber = chapterNumber;
-    renderVerseList(ch);
-    showView('verses');
-  }
-
   function renderVerseList(ch){
     document.getElementById('verseListTitle').textContent = ch.title;
     document.getElementById('verseListSub').textContent = ch.subtitle;
@@ -777,17 +897,38 @@
     `).join('');
   }
 
-  function openVerse(verseNumber){
-    const verses = getVersesForChapter(currentChapterNumber);
-    const v = verses.find(item => item.verse === verseNumber);
-    if(!v) return;
-    renderVerseDetail(v);
-    showView('verse');
-    const visited = Storage.get('versesVisited', 0);
-    Storage.set('versesVisited', visited + 1);
-    tuneDiya();
-    whisper('Take your time.');
+  /* ---------------- reading resume ----------------
+     Every time a verse is opened (fresh or restored on refresh), the current
+     chapter/verse and a timestamp are saved. This never surfaces as a badge
+     or streak — just a single quiet "continue where you left off" card on
+     Home, and only until the person opens a different verse or dismisses it. */
+  function saveReadingProgress(chapterNumber, verseNumber){
+    Storage.set('lastReading', { chapter: chapterNumber, verse: verseNumber, ts: Date.now() });
   }
+
+  function renderContinueCard(){
+    const card = document.getElementById('continueCard');
+    if(!card) return;
+    const last = Storage.get('lastReading', null);
+    if(!last || !last.chapter || !last.verse){ card.style.display = 'none'; return; }
+    const ch = CHAPTERS.find(c => c.number === last.chapter);
+    const chapterLabel = ch ? ch.title : `Chapter ${last.chapter}`;
+    const detail = document.getElementById('continueDetail');
+    if(detail) detail.textContent = `Last read: ${chapterLabel} • Verse ${last.verse}`;
+    card.style.display = '';
+  }
+
+  document.getElementById('continueReadingBtn')?.addEventListener('click', ()=>{
+    const last = Storage.get('lastReading', null);
+    if(!last) return;
+    setRoute({ view: 'verse', chapter: last.chapter, verse: last.verse });
+  });
+  document.getElementById('continueStartHomeBtn')?.addEventListener('click', ()=>{
+    // "Start from Home" never deletes the saved progress — it just sets the
+    // card aside for this visit so the emotion picker is what greets them.
+    const card = document.getElementById('continueCard');
+    if(card) card.style.display = 'none';
+  });
 
   function renderVerseDetail(v){
     document.getElementById('verseDetail').innerHTML = `
@@ -813,32 +954,30 @@
 
   document.getElementById('chapterList')?.addEventListener('click', (e)=>{
     const row = e.target.closest('.chapter-row');
-    if(row) openChapter(Number(row.dataset.chapter));
+    if(row) setRoute({ view: 'verses', chapter: Number(row.dataset.chapter) });
   });
   document.getElementById('chapterList')?.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter' || e.key === ' '){
       const row = e.target.closest('.chapter-row');
-      if(row){ e.preventDefault(); openChapter(Number(row.dataset.chapter)); }
+      if(row){ e.preventDefault(); setRoute({ view: 'verses', chapter: Number(row.dataset.chapter) }); }
     }
   });
 
   document.getElementById('verseList')?.addEventListener('click', (e)=>{
     const row = e.target.closest('.chapter-row');
-    if(row) openVerse(Number(row.dataset.verse));
+    if(row) setRoute({ view: 'verse', chapter: currentChapterNumber, verse: Number(row.dataset.verse) });
   });
   document.getElementById('verseList')?.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter' || e.key === ' '){
       const row = e.target.closest('.chapter-row');
-      if(row){ e.preventDefault(); openVerse(Number(row.dataset.verse)); }
+      if(row){ e.preventDefault(); setRoute({ view: 'verse', chapter: currentChapterNumber, verse: Number(row.dataset.verse) }); }
     }
   });
 
-  document.getElementById('backToChapters').addEventListener('click', ()=> showView('chapters'));
+  document.getElementById('backToChapters').addEventListener('click', ()=> setRoute({ view: 'chapters' }));
   document.getElementById('backToVerses').addEventListener('click', ()=>{
-    if(currentChapterNumber === null){ showView('chapters'); return; }
-    const ch = CHAPTERS.find(c => c.number === currentChapterNumber);
-    if(ch) renderVerseList(ch);
-    showView('verses');
+    if(currentChapterNumber === null){ setRoute({ view: 'chapters' }); return; }
+    setRoute({ view: 'verses', chapter: currentChapterNumber });
   });
 
   /* ---------------- journal ---------------- */
@@ -1197,6 +1336,14 @@
     scheduleTinyLife();
     tuneDiya();
     armStayTimer();
+
+    /* Restore whatever the URL hash points to (a refreshed chapter, verse,
+       or other section) instead of always landing back on Home. An empty
+       hash resolves to {view:'home'} via parseHash(), which is what a
+       plain first visit already looks like. From here on, 'hashchange'
+       (already wired above) keeps the URL and the visible view in sync,
+       including for the browser's own Back/Forward buttons. */
+    await goToRoute(parseHash(), { isRestore: true });
 
     /* a quiet "welcome back" — noticed only by someone who has actually returned */
     (function greetReturn(){

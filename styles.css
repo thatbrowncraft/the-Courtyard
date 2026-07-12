@@ -490,6 +490,33 @@
   .quick-links button:hover{ color:var(--gold-bright); border-color:var(--gold-soft); }
   .ql-sep{ color:var(--line); font-size:0.8rem; }
 
+  /* ---------- "continue your journey" (Session 15/16, reading resume) ----------
+     Sits on Home, above the emotion picker, only shown when a previous
+     reading exists. Matches .card's border language and .hero's centered
+     max-width so it reads as part of the same page rather than a bolted-on
+     widget — quiet enough to skip past for anyone who just wants the
+     emotion picker, present enough to notice if it's what they came for. */
+  .continue-card{
+    max-width:600px; margin:0 auto 44px; padding:26px 24px;
+    border:1px solid var(--line-soft); border-top:1px solid var(--line);
+    text-align:center; transition:border-color 0.35s var(--ease);
+  }
+  .continue-card .eyebrow{ color:var(--gold); opacity:0.8; margin-bottom:10px; }
+  .continue-detail{
+    color:var(--ivory-dim); font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-size:1.08rem; margin:0 0 22px;
+  }
+  .continue-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .continue-btn{
+    background:transparent; color:var(--ivory-dim); border:1px solid var(--line);
+    padding:9px 18px; border-radius:0; cursor:pointer;
+    font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase;
+    transition:all 0.3s var(--ease);
+  }
+  .continue-btn:hover, .continue-btn:focus-visible{ border-color:var(--gold-soft); color:var(--gold-bright); }
+  .continue-btn-primary{ color:var(--gold-bright); border-color:var(--gold-soft); }
+  .continue-btn-primary:hover, .continue-btn-primary:focus-visible{ background:rgba(192,138,62,0.09); border-color:var(--gold); }
+
   /* ---------- generic section shell ---------- */
   .section-shell{ max-width:840px; margin:0 auto; padding:56px 24px 90px; }
   .section-shell h2{ font-size:1.7rem; font-style:italic; font-weight:500; margin-bottom:8px; }

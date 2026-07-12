@@ -765,87 +765,156 @@ for both — because that's genuinely what the metadata said.
    application logic.
 3. Chapters 4–18 remain fully unwritten.
 
-## Session 15 — Data architecture: eliminate duplicated chapter metadata (no redesign, no new features)
+
+## Session 15 - Lazy chapter loading, URL routing, and reading resume (performance + navigation)
 
 ### What was built
-Removed the standing duplication between `data/chapters.json` and each
-`data/chapter-NN.json`: title, subtitle, and verse count used to be typed
-twice (once in the manifest, once implicitly in the verse file itself via
-its array length), which is exactly what let Session 14's "0 verses" bug
-happen in the first place — a metadata file getting out of sync with the
-content it described.
+- **Lazy chapter loading**: `loadContent()` on startup now fetches only
+  `config.json` and `data/chapters.json` -- it no longer fetches every
+  chapter's verse file up front. A new `loadChapterVerses(chapterNumber)`
+  fetches `data/chapter-NN.json` the first time that chapter is actually
+  opened, caches the result in `VERSES_BY_CHAPTER` so reopening it is
+  instant, and de-dupes concurrent requests for the same chapter via an
+  in-flight promise map (`chapterLoadPromises`) so a fast double-click or a
+  prefetch racing a real open never fires two fetches. A chapter with no
+  verse data (or a failed fetch) resolves to an empty array without being
+  cached as a permanent failure, so it can succeed later if retried.
+- **One-ahead prefetch**: `prefetchNextChapter()` quietly warms chapter
+  N+1 in the background after chapter N's verses finish loading -- never
+  more than one chapter ahead, and never the whole scripture.
+- **URL-hash routing**: the app now has real routes -- `#/home`,
+  `#/chapters`, `#/chapter/N`, `#/chapter/N/verse/M`, and `#/<view>` for
+  the other top-level sections (journal, stats, settings, search,
+  collections, meditation). `parseHash()` reads the current hash into a
+  route object; `hashFor()` does the reverse; `setRoute()` is what any
+  click now calls (nav buttons, chapter rows, verse rows, back links);
+  `goToRoute()` is the single function that actually renders a route,
+  whether it was reached by a click, a browser Back/Forward press, or the
+  initial page load. Refreshing while reading Chapter 5, Verse 12 now
+  fetches only that one chapter's JSON and restores exactly that verse,
+  instead of always landing back on Home. An unrecognized or malformed
+  route falls back to Home via `{replace:true}` so it doesn't itself
+  become a Back-button stop. Back/Forward work through the browser's
+  native hash history -- no custom stack was built.
+- **Reading resume**: every verse open (fresh or restored) now calls
+  `saveReadingProgress()`, storing `{chapter, verse, ts}` under
+  `lastReading` in `localStorage`. Home gained a small "Continue your
+  journey" card (`renderContinueCard()`) that shows only when a saved
+  reading exists, reading "Last read: [Chapter title] - Verse N," with
+  "Continue Reading" (routes straight to that verse) and "Start from Home"
+  (dismisses the card for this visit without deleting the saved progress).
+  No streak, count, or "you're behind" framing -- just the one fact, and
+  an easy way to set it aside.
 
-- **`data/chapters.json`** is now only a lightweight manifest: an ordered
-  JSON array of chapter filenames (`"chapter-01.json"` … `"chapter-18.json"`).
-  No `title`, `subtitle`, or `verseCount` field remains in this file.
-- **`data/chapter-01.json`, `chapter-02.json`, `chapter-03.json`** were
-  updated directly, in place, to the new self-contained shape:
-  `{ "id": N, "title": "...", "subtitle": "...", "verses": [ ...unchanged
-  verse array... ] }`. Only the wrapper was added — every verse object
-  inside `verses` was diffed against the pre-session file and confirmed
-  identical; nothing about the verse content itself changed. Verse counts
-  (47 / 72 / 43) were confirmed to match `verses.length` exactly for all
-  three files — this also incidentally confirms Chapter 3's array really
-  is 43 items, closing part of the open question in README §7 (the
-  *count* is now verified; tone/schema/quality of Chapter 3's content is
-  still unverified, see Suggestions below).
-- **`app.js` → `loadContent()`** was rewritten to read the manifest, then
-  fetch each listed chapter file and derive that chapter's row (`number`,
-  `title`, `subtitle`, `verseCount`) directly from what the file reports.
-  A chapter file that's missing or unreachable (not yet written) falls
-  back to the same placeholder row behavior as before (`Chapter N` /
-  "Placeholder chapter — verses added later" / 0 verses), using its
-  position in the manifest as the chapter number. The old two-step
-  "fetch chapters.json, then fetch chapter-NN.json only if verseCount > 0"
-  logic is gone — replaced by a single per-file fetch-and-derive step.
+### What changed, file by file
+- `app.js`: replaced the `Promise.all` eager-fetch loop in `loadContent()`
+  with `loadChapterVerses()` + `prefetchNextChapter()`; removed
+  `openChapter()`/`openVerse()` in favor of `setRoute()` calls at each
+  click site; added the routing block (`hashFor`, `parseHash`, `setRoute`,
+  `goToRoute`, the `hashchange` listener) directly above the existing
+  `showView()`/`revealView()` pair, which are unchanged; added
+  `saveReadingProgress()` and `renderContinueCard()`; `init()` now awaits
+  `goToRoute(parseHash(), {isRestore:true})` after its existing setup
+  instead of relying on the static "Home is active" markup by default.
+  `showView()`, `revealView()`, `renderChapters()`, `renderVerseList()`,
+  `renderVerseDetail()`, and every animation/ambience/theme/journal/stats
+  function are byte-identical to before.
+- `index.html`: added one new block inside `#view-home` -- the hidden-by-
+  default `#continueCard` with its two buttons -- placed between the hero
+  and the emotion grid. Nothing else in the file was touched (confirmed by
+  diffing against the pre-session version: this is the only insertion).
+- `styles.css` **was not among the files uploaded for this session**, so
+  it could not be edited directly. The continue-card's look was built with
+  zero new CSS: it reuses the existing `.eyebrow` class for its label and
+  copies the exact inline button style already used by `#replayWelcomeBtn`
+  / `#clearDataBtn` in Settings, plus a handful of inline spacing/border
+  rules using the two confirmed existing CSS variables (`--line`,
+  `--ivory-dim`). This should work correctly today, but the recommended
+  follow-up is to move those inline styles into `styles.css` as a proper
+  `.continue-card` rule next time that file is available, for consistency
+  with how every other component is styled.
 
-The repository now already contains the final architecture — there is no
-migration step, script, or follow-up task required. Adding chapter 4 (or
-any future chapter) is just: write `data/chapter-04.json` in the
-self-contained shape above; its filename is already listed in the manifest.
+### What was verified
+- `node --check app.js` passes.
+- Diffed `index.html` against the pre-session version -- the only change
+  is the new `#continueCard` block; every other line is untouched.
+- Manually traced every existing click path (nav buttons, chapter rows,
+  verse rows, both back links, the emotion-picker quick-links) to confirm
+  each now calls `setRoute()` instead of the old direct `showView()` /
+  `openChapter()` / `openVerse()` calls, and that `goToRoute()` covers
+  every view id `showView()` can be given.
+- Confirmed `getVersesForChapter()` and `VERSES_BY_CHAPTER` still work
+  exactly as before for anything reading already-cached chapter data --
+  only how they get populated changed (on demand vs. all at once).
 
-### What was NOT touched
-- No rendering, layout, CSS, or interaction logic changed.
-  `renderChapters()`, `renderVerseList()`, `getVersesForChapter()`, and
-  `renderVerseDetail()` all still read `CHAPTERS`/`VERSES_BY_CHAPTER` the
-  exact same way — they don't know or care that the underlying fetch
-  strategy changed.
-- Verse content (the `sanskrit`, `translation`, `teaching`, etc. fields per
-  verse, for all 47+72+43 verses across the three written chapters) is
-  completely unchanged — confirmed by diffing the `verses` array in each
-  updated file against the pre-session version, field for field.
-- `config.json` loading, `CONFIG` fallback, arrival ritual, journal, stats,
-  ambient sound, and every other subsystem: untouched.
-
-### Why this matters
-Session 14's root-cause bug was a stale/never-updated `chapters.json`
-disagreeing with the real chapter files. With verse count now *derived*
-rather than *stored*, that specific class of bug — metadata claiming a
-count that doesn't match the actual content — can't recur, because there's
-no longer a second number to fall out of sync.
-
-### Verification performed
-- `node --check app.js` — parses with no syntax errors.
-- Full diff of `app.js` against the pre-session version — only the
-  `loadContent()`/`CHAPTERS`/`VERSES_BY_CHAPTER` setup block changed;
-  every rendering function, event handler, and every other line is
-  byte-identical.
-- For each of `chapter-01.json`, `chapter-02.json`, `chapter-03.json`:
-  parsed both the pre-session and post-session file and asserted the
-  `verses` array is deep-equal between them — confirms the wrapping added
-  metadata without altering a single verse field.
-- Confirmed `verses.length` for each file (47, 72, 43) matches both the
-  old `chapters.json`'s `verseCount` and the received text's canonical
-  chapter lengths.
-- Ran `loadContent()` end-to-end against the real, updated data files in
-  an isolated harness (no browser needed — `fetch` mocked to read from
-  disk): chapters 1–3 correctly produced their real title, subtitle, and
-  derived verse count; chapters 4–18 (no file yet) correctly fell back to
-  placeholder rows using their position in the manifest.
+### Genuine limitations / what remains
+- The routing system was tested by tracing the code paths, not by running
+  the app in a live browser session (no server/browser available in this
+  environment) -- a manual pass in a real browser (open a verse, refresh,
+  confirm it restores; try Back/Forward across a few chapters; try an
+  invalid `#/chapter/999` URL) is recommended before trusting this fully.
+- `styles.css` should get a proper `.continue-card` rule once it's
+  available again, replacing the inline styles used here.
+- Everything from README Section 7's open items (Chapters 4-18, emotions/
+  keywords/related wiring, flute audio, search indexing) is unchanged and
+  still open -- this session was scoped to loading/navigation only, per
+  the brief.
 
 ### Suggestions for next session
-1. Chapter 3's *content* — tone, schema completeness, adherence to the
-   voice standard in README §6 — is still unverified (only its verse
-   *count* was confirmed this session, see above). A future session should
-   open `chapter-03.json` and check it the way Chapter 1 was checked.
-2. Chapters 4–18 remain fully unwritten.
+1. A live-browser smoke test of the new routing and reading-resume flow,
+   per the limitation above.
+2. Move the continue-card's inline styles into `styles.css` once that file
+   is back in scope.
+3. Chapter 3's content still hasn't been independently verified (carried
+   over from Session 14) -- still open.
+
+
+## Session 16 - Continue-card given a proper stylesheet rule (styles.css now available)
+
+### What was built
+- `styles.css` was uploaded this session, so the Session 15 follow-up item
+  is done: the "Continue your journey" card on Home now has a real
+  `.continue-card` rule (plus `.continue-detail`, `.continue-actions`,
+  `.continue-btn`, `.continue-btn-primary`) added to the "home" section of
+  `styles.css`, right after `.quick-links`. It matches the existing design
+  language on purpose: the same border treatment as `.card`
+  (`border-top: var(--line)`, sides `var(--line-soft)`), the same
+  max-width/centering as `.hero`, and the same button geometry as
+  `.back-link`/the Settings buttons (sharp corners, uppercase, 1px border).
+  "Continue Reading" is styled as the primary action (gold-bright,
+  gold-soft border, matching `.empty-state button`'s hover treatment);
+  "Start from Home" is the plain/secondary variant.
+- `index.html`'s `#continueCard` markup was updated to use these new
+  classes instead of the inline styles from Session 15 — only the
+  `display:none` inline style remains, since that one is toggled directly
+  by `renderContinueCard()` in `app.js` and isn't decorative.
+
+### What changed, file by file
+- `styles.css`: one new block added after `.quick-links` in the "home"
+  section (see above). Nothing else in the file was touched.
+- `index.html`: the `#continueCard` block's `class` attributes were
+  updated; no other line changed.
+- `app.js`: untouched this session.
+
+### What was verified
+- Diffed `index.html` against the Session 15 output — the only change is
+  the `class` attributes on the continue-card's elements (swapping inline
+  styles for the new classes); the surrounding markup, IDs, and every other
+  line are identical.
+- Diffed `styles.css` against the uploaded version — the only change is
+  the new `.continue-card`/`.continue-detail`/`.continue-actions`/
+  `.continue-btn`/`.continue-btn-primary` block; every existing rule,
+  theme variable, and media query is untouched.
+- `node --check app.js` still passes (unchanged, but re-verified since
+  `app.js` was re-copied this session).
+
+### Genuine limitations / what remains
+- Still not verified in a live browser (no server/browser available in
+  this environment) — same recommendation as Session 15 stands: open a
+  verse, refresh, confirm restore; try Back/Forward; try an invalid
+  chapter URL; and now also glance at the continue-card's new styling in
+  both the Dusk default and the Night/Dawn theme variants, since it uses
+  the same re-valued custom properties but hasn't been visually confirmed
+  under all three.
+- Everything else from Session 15's and README §7's open items is
+  unchanged.
