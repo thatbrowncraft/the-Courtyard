@@ -918,3 +918,99 @@ for both — because that's genuinely what the metadata said.
   under all three.
 - Everything else from Session 15's and README §7's open items is
   unchanged.
+
+## Session 17 — Fix chapters.json / renderChapters() architecture mismatch
+
+### The bug
+The Session 15 lazy-loading refactor left `app.js` mixing two incompatible
+architectures. `data/chapters.json` had already been converted (before
+Session 15, intentionally) into a plain filename manifest —
+`["chapter-01.json", "chapter-02.json", ...]` — with each chapter's own
+file carrying its real metadata (`{ id, title, subtitle, verses }`). But
+`loadContent()` still did `CHAPTERS = chapters` straight from that fetch,
+so the in-memory `CHAPTERS` array silently became an array of filename
+strings. Every downstream read of `ch.number`, `ch.title`, `ch.subtitle`,
+and `ch.verseCount` (in `renderChapters()`, `renderVerseList()`,
+`goToRoute()`, `loadChapterVerses()`, `prefetchNextChapter()`,
+`renderContinueCard()`) was then reading properties off a string, which
+is always `undefined` — so nothing about a chapter ever rendered
+correctly once the manifest fetch succeeded. The fallback (metadata-
+shaped) `CHAPTERS` array only worked *because* the manifest fetch failed
+and the fallback was never overwritten — this was a coincidence, not a
+fix.
+
+### The fix — single source of truth: each chapter's own file
+Kept `data/chapters.json` exactly as it already was (a filename
+manifest) rather than reverting it back to a metadata file — that
+reversal was the thing explicitly ruled out. Instead:
+- `CHAPTER_FILES` now holds the raw manifest (array of filenames).
+- `CHAPTERS` is Claude's own in-memory metadata cache, built once from
+  `CHAPTER_FILES` via `buildChaptersFromManifest()`: one entry per
+  chapter with `number` (parsed from the filename), `file`, and
+  `title`/`subtitle`/`verseCount` all starting `null`.
+- `loadChapterVerses(chapterNumber)` — the existing lazy per-chapter
+  fetch — now reads the chapter's own file's `{ title, subtitle, verses }`
+  shape (previously it assumed a bare verse array, which was also wrong
+  for this data shape) and fills in that chapter's real title/subtitle/
+  verseCount on its `CHAPTERS` entry at that point, alongside caching the
+  verses as before. This is the "derive metadata from each chapter's own
+  JSON when required" option, chosen because the manifest was never
+  meant to carry metadata.
+- `renderChapters()` (the Chapters overview) is the one place that needs
+  every chapter's metadata at once, so it now paints immediately from
+  whatever's cached/placeholder, then fetches any chapter that hasn't
+  been loaded yet (`Promise.all` over `loadChapterVerses`) and repaints
+  once they resolve. Chapters already opened this session (or already
+  prefetched) resolve instantly from cache and cost no extra request —
+  this only pays a real network cost the first time the overview is
+  opened, never on app load.
+- Removed the `!ch.verseCount` early-out in `loadChapterVerses()` and
+  `prefetchNextChapter()` — that check depended on metadata the manifest
+  no longer provides ahead of time. A chapter that hasn't been written
+  yet now simply resolves to an empty array on fetch (404, or an empty
+  `verses` array) instead of being pre-emptively skipped, relying on the
+  same try/catch fallback that was already there for missing files.
+
+### A tradeoff worth flagging explicitly
+Because per-chapter title/subtitle only exist inside each chapter's own
+file, opening the Chapters overview for the first time in a session now
+fetches every chapter that isn't already cached, not just the placeholder
+manifest. This is unavoidable under "the manifest is a filename list,
+not metadata" without adding a second metadata file — but it does mean
+the overview is no longer as light as a single small JSON fetch. If that
+first-open cost ever becomes a real problem (e.g. once Chapters 4–18 have
+substantial content), the alternative is reintroducing a small metadata
+file (title/subtitle/verseCount only, no verses) alongside the filename
+manifest — flagging this now rather than silently picking a direction.
+
+### What changed, file by file
+- `app.js`: `CHAPTERS`/`CHAPTER_FILES` setup, `loadContent()`,
+  `loadChapterVerses()`, `prefetchNextChapter()`, `renderChapters()`
+  (split into `paintChapterList()` + `renderChapters()`), and the
+  `renderContinueCard()` fallback. Nothing else in the file touched —
+  routing, `showView()`/`revealView()`, journal, stats, ambient/audio
+  systems, and the arrival ritual are all unchanged.
+- `styles.css`, `index.html`, `data/chapters.json`: untouched.
+
+### What was verified
+- `node --check app.js` passes.
+- Diffed the full file against the uploaded version — every change is
+  confined to the chapter metadata/loading block described above.
+- Traced every remaining reference to `CHAPTERS` in the file (`grep`) to
+  confirm each one now reads a real metadata object, never a filename
+  string.
+
+### Genuine limitations / what remains
+- Not verified in a live browser (none available in this environment) —
+  same standing recommendation as prior sessions: open Chapters, confirm
+  titles/subtitles/counts populate correctly (including for chapters
+  4–18, which likely 404 gracefully into an "unwritten" empty state);
+  open a chapter directly via URL and confirm it still works without
+  visiting the overview first; refresh mid-verse and confirm restore.
+- Assumed each `chapter-NN.json` is shaped `{ id, title, subtitle,
+  verses: [...] }` per the person's description — this session did not
+  have that file available to open directly and confirm the exact shape
+  on disk matches.
+- Everything else from Session 15/16 and README §7's open items is
+  unchanged, including the unsourced flute ambience and Chapter 3's
+  unverified content.

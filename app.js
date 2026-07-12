@@ -36,13 +36,18 @@
   ];
 
   /* ---------------- app configuration & content (data-driven) ----------------
-     CONFIG mirrors config.json; CHAPTERS mirrors data/chapters.json; and each
-     chapter with real content is fetched from data/chapter-NN.json into
-     VERSES_BY_CHAPTER. The literal values below are fallback defaults only —
-     used if a fetch fails (e.g. opened without a local server) — so behavior
-     is identical to before even without a network layer. Adding a new chapter
-     never requires touching this file: add data/chapter-NN.json and give that
-     chapter a title/subtitle/verseCount in data/chapters.json. */
+     CONFIG mirrors config.json. data/chapters.json is a plain filename
+     manifest — an ordered array of strings like "chapter-01.json" — not a
+     metadata file. It only tells us how many chapters exist, their order,
+     and their numbers. Every other fact about a chapter (title, subtitle,
+     verse count) lives inside that chapter's own file, shaped as
+     { id, title, subtitle, verses: [...] }, and is derived from it the
+     first time that chapter is actually needed. CHAPTERS below is Claude's
+     in-memory metadata cache, built from the manifest and progressively
+     filled in as each chapter file is fetched — it is never itself fetched
+     or overwritten wholesale from disk. Adding a new chapter never requires
+     touching this file: add data/chapter-NN.json (with its own id/title/
+     subtitle/verses) and list its filename in data/chapters.json. */
   let CONFIG = {
     version: '2.0.0',
     appTitle: "Kanha Ji's Courtyard",
@@ -51,17 +56,31 @@
     reducedMotionDefault: false,
     defaultVolume: 0.45
   };
-  let CHAPTERS = Array.from({length:18}, (_,i)=>({
-    number: i+1,
-    title: `Chapter ${i+1}`,
-    subtitle: 'Placeholder chapter — verses added later',
-    verseCount: 0
-  }));
+  // Fallback manifest used only if data/chapters.json can't be fetched
+  // (e.g. opened without a local server) — same 18-chapter shape either way.
+  let CHAPTER_FILES = Array.from({length:18}, (_,i)=>`chapter-${String(i+1).padStart(2,'0')}.json`);
+  // CHAPTERS holds one metadata placeholder per manifest entry. title/
+  // subtitle/verseCount are null until that chapter's own file has been
+  // fetched at least once; renderChapters() shows a quiet placeholder for
+  // whatever isn't loaded yet rather than treating null as "unwritten."
+  let CHAPTERS = [];
   let VERSES_BY_CHAPTER = {};
   // Tracks in-flight fetches per chapter number so a chapter is never
   // requested twice at once (e.g. a fast double-click, or a prefetch
   // racing a real open of the same chapter).
   let chapterLoadPromises = {};
+
+  function chapterNumberFromFile(filename){
+    const m = /(\d+)/.exec(filename);
+    return m ? Number(m[1]) : null;
+  }
+
+  function buildChaptersFromManifest(files){
+    CHAPTERS = files.map((file, i) => {
+      const number = chapterNumberFromFile(file) || (i + 1);
+      return { number, file, title: null, subtitle: null, verseCount: null };
+    });
+  }
 
   async function fetchJSON(path){
     const res = await fetch(path);
@@ -69,9 +88,10 @@
     return res.json();
   }
 
-  /* Startup only loads config.json and the lightweight chapters index —
-     never the ~700-verse body of the Gita. Individual chapters are fetched
-     on demand by loadChapterVerses() below, the first time they're opened. */
+  /* Startup only loads config.json and the lightweight filename manifest —
+     never the ~700-verse body of the Gita. Individual chapters (title,
+     subtitle, and verses together) are fetched on demand by
+     loadChapterVerses() below, the first time they're actually needed. */
   async function loadContent(){
     try{
       const config = await fetchJSON('config.json');
@@ -81,38 +101,44 @@
     if(CONFIG.appTitle) document.title = CONFIG.appTitle;
 
     try{
-      const chapters = await fetchJSON('data/chapters.json');
-      if(Array.isArray(chapters) && chapters.length) CHAPTERS = chapters;
-    }catch(e){ /* keep fallback CHAPTERS */ }
+      const manifest = await fetchJSON('data/chapters.json');
+      if(Array.isArray(manifest) && manifest.length) CHAPTER_FILES = manifest;
+    }catch(e){ /* keep fallback CHAPTER_FILES */ }
+
+    buildChaptersFromManifest(CHAPTER_FILES);
   }
 
   function getVersesForChapter(chapterNumber){
     return VERSES_BY_CHAPTER[chapterNumber] || [];
   }
 
-  /* Fetches data/chapter-NN.json the first time a chapter is needed, and
-     caches the result in VERSES_BY_CHAPTER so reopening it is instant and
-     never re-fetched. Concurrent requests for the same chapter (e.g. a
-     real open racing a background prefetch) share the same in-flight
-     promise instead of firing a duplicate request. A chapter whose verses
-     haven't been written yet (verseCount 0, or a failed/missing fetch)
-     resolves to an empty array and is not cached as a failure, so it can
-     be retried on a later attempt (e.g. after the person reconnects). */
+  /* Fetches a chapter's own file the first time that chapter is needed —
+     data/chapter-NN.json, shaped { id, title, subtitle, verses: [...] } —
+     and caches the verses in VERSES_BY_CHAPTER so reopening it is instant
+     and never re-fetched. The same fetch also fills in that chapter's
+     title/subtitle/verseCount on its CHAPTERS entry, since the manifest
+     never carried that metadata. Concurrent requests for the same chapter
+     (e.g. a real open racing a background prefetch) share the same
+     in-flight promise instead of firing a duplicate request. A chapter
+     that hasn't been written yet (missing file, or a file with an empty
+     verses array) resolves to an empty array; only a genuine fetch/parse
+     failure is left uncached so it can be retried later. */
   async function loadChapterVerses(chapterNumber){
     if(VERSES_BY_CHAPTER[chapterNumber]) return VERSES_BY_CHAPTER[chapterNumber];
     if(chapterLoadPromises[chapterNumber]) return chapterLoadPromises[chapterNumber];
 
     const ch = CHAPTERS.find(c => c.number === chapterNumber);
-    if(!ch || !ch.verseCount) return [];
+    if(!ch) return [];
 
-    const pad = n => String(n).padStart(2,'0');
     const promise = (async ()=>{
       try{
-        const verses = await fetchJSON(`data/chapter-${pad(chapterNumber)}.json`);
-        if(Array.isArray(verses) && verses.length){
-          VERSES_BY_CHAPTER[chapterNumber] = verses;
-          return verses;
-        }
+        const data = await fetchJSON(`data/${ch.file}`);
+        const verses = Array.isArray(data && data.verses) ? data.verses : [];
+        ch.title = data.title || ch.title || `Chapter ${chapterNumber}`;
+        ch.subtitle = data.subtitle || ch.subtitle || '';
+        ch.verseCount = verses.length;
+        VERSES_BY_CHAPTER[chapterNumber] = verses;
+        return verses;
       }catch(e){ /* falls back to "hasn't been written yet" empty state */ }
       return [];
     })();
@@ -127,11 +153,15 @@
 
   /* Quietly warms the next chapter in the background once the current one
      has finished loading — never the whole scripture, just one chapter
-     ahead, and only if it isn't already cached or already loading. */
+     ahead, and only if it isn't already cached or already loading. Whether
+     that next chapter has real verses isn't known until it's fetched, so
+     this only skips chapters that are already loaded/loading, not ones
+     that merely look "empty" — the fetch itself resolves to [] harmlessly
+     for a chapter that hasn't been written yet. */
   function prefetchNextChapter(chapterNumber){
     const next = chapterNumber + 1;
     const ch = CHAPTERS.find(c => c.number === next);
-    if(!ch || !ch.verseCount) return;
+    if(!ch) return;
     if(VERSES_BY_CHAPTER[next] || chapterLoadPromises[next]) return;
     loadChapterVerses(next).catch(()=>{});
   }
@@ -861,18 +891,34 @@
   // view knows what to render and where "back" should return to.
   let currentChapterNumber = null;
 
-  function renderChapters(){
+  // Draws the chapters overview from whatever CHAPTERS currently holds —
+  // real metadata for chapters already fetched this session, a quiet
+  // placeholder for ones that aren't loaded yet.
+  function paintChapterList(){
     const list = document.getElementById('chapterList');
+    if(!list) return;
     list.innerHTML = CHAPTERS.map(ch => `
-      <div class="chapter-row" data-chapter="${ch.number}" tabindex="0" role="button" aria-label="${ch.title}">
+      <div class="chapter-row" data-chapter="${ch.number}" tabindex="0" role="button" aria-label="${ch.title || `Chapter ${ch.number}`}">
         <span class="chapter-num" aria-hidden="true">${String(ch.number).padStart(2,'0')}</span>
         <span class="chapter-info">
-          <span class="chapter-title">${ch.title}</span>
-          <span class="chapter-sub">${ch.subtitle}</span>
+          <span class="chapter-title">${ch.title || `Chapter ${ch.number}`}</span>
+          <span class="chapter-sub">${ch.subtitle != null ? ch.subtitle : ''}</span>
         </span>
-        <span class="chapter-count">${ch.verseCount} verses</span>
+        <span class="chapter-count">${ch.verseCount != null ? `${ch.verseCount} verses` : ''}</span>
       </div>
     `).join('');
+  }
+
+  // The overview is the one place the app needs every chapter's metadata
+  // at once — title/subtitle/verseCount live inside each chapter's own
+  // file, not the manifest, so they're fetched here, the first time this
+  // view is opened. Already-loaded chapters (e.g. one just finished
+  // reading) resolve instantly from cache and cost no extra request.
+  function renderChapters(){
+    paintChapterList();
+    const needsLoad = CHAPTERS.filter(ch => ch.verseCount === null);
+    if(!needsLoad.length) return;
+    Promise.all(needsLoad.map(ch => loadChapterVerses(ch.number))).then(paintChapterList);
   }
 
   function renderVerseList(ch){
@@ -912,7 +958,7 @@
     const last = Storage.get('lastReading', null);
     if(!last || !last.chapter || !last.verse){ card.style.display = 'none'; return; }
     const ch = CHAPTERS.find(c => c.number === last.chapter);
-    const chapterLabel = ch ? ch.title : `Chapter ${last.chapter}`;
+    const chapterLabel = (ch && ch.title) || `Chapter ${last.chapter}`;
     const detail = document.getElementById('continueDetail');
     if(detail) detail.textContent = `Last read: ${chapterLabel} • Verse ${last.verse}`;
     card.style.display = '';
