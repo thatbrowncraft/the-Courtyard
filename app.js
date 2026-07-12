@@ -1378,7 +1378,7 @@
     runArrival();
     initStars();
     renderEmotions();
-    renderChapters();
+    //renderChapters();
     syncMotionToggle();
     initAmbient();
     humanizeTimings();
