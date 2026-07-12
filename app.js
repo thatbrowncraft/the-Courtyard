@@ -36,13 +36,19 @@
   ];
 
   /* ---------------- app configuration & content (data-driven) ----------------
-     CONFIG mirrors config.json; CHAPTERS mirrors data/chapters.json; and each
-     chapter with real content is fetched from data/chapter-NN.json into
-     VERSES_BY_CHAPTER. The literal values below are fallback defaults only —
-     used if a fetch fails (e.g. opened without a local server) — so behavior
-     is identical to before even without a network layer. Adding a new chapter
-     never requires touching this file: add data/chapter-NN.json and give that
-     chapter a title/subtitle/verseCount in data/chapters.json. */
+     CONFIG mirrors config.json. data/chapters.json is now only a lightweight
+     manifest — an ordered array of chapter filenames — with no title,
+     subtitle, or verse count of its own. Each data/chapter-NN.json is the
+     single source of truth for its own metadata (id, title, subtitle) and
+     its verses array; CHAPTERS (title/subtitle/verseCount for rendering) is
+     built entirely from what those files report, and verseCount is always
+     `verses.length` — never a separately stored number, so it can never
+     drift out of sync with the actual content.
+     The literals below are fallback defaults only — used if a fetch fails
+     (e.g. opened without a local server) — so behavior is identical to
+     before even without a network layer. Adding a new chapter never
+     requires touching this file: add data/chapter-NN.json (with its own
+     id/title/subtitle/verses) and list its filename in data/chapters.json. */
   let CONFIG = {
     version: '2.0.0',
     appTitle: "Kanha Ji's Courtyard",
@@ -51,12 +57,9 @@
     reducedMotionDefault: false,
     defaultVolume: 0.45
   };
-  let CHAPTERS = Array.from({length:18}, (_,i)=>({
-    number: i+1,
-    title: `Chapter ${i+1}`,
-    subtitle: 'Placeholder chapter — verses added later',
-    verseCount: 0
-  }));
+  // Fallback manifest, used only if data/chapters.json itself can't be fetched.
+  const FALLBACK_MANIFEST = Array.from({length:18}, (_,i)=>`chapter-${String(i+1).padStart(2,'0')}.json`);
+  let CHAPTERS = [];
   let VERSES_BY_CHAPTER = {};
 
   async function fetchJSON(path){
@@ -73,18 +76,38 @@
 
     if(CONFIG.appTitle) document.title = CONFIG.appTitle;
 
+    let manifest = FALLBACK_MANIFEST;
     try{
-      const chapters = await fetchJSON('data/chapters.json');
-      if(Array.isArray(chapters) && chapters.length) CHAPTERS = chapters;
-    }catch(e){ /* keep fallback CHAPTERS */ }
+      const fetched = await fetchJSON('data/chapters.json');
+      if(Array.isArray(fetched) && fetched.length) manifest = fetched;
+    }catch(e){ /* keep fallback manifest */ }
 
-    const pad = n => String(n).padStart(2,'0');
-    await Promise.all(CHAPTERS.map(async (ch)=>{
-      if(!ch || !ch.verseCount) return;
+    // For each filename in the manifest, load the chapter file and derive
+    // everything CHAPTERS/VERSES_BY_CHAPTER need from its own contents.
+    // A chapter that hasn't been written yet (file missing, or unreachable)
+    // falls back to a placeholder row — same as before — using its position
+    // in the manifest as the chapter number.
+    CHAPTERS = await Promise.all(manifest.map(async (filename, i)=>{
+      const positionalNumber = i+1;
       try{
-        const verses = await fetchJSON(`data/chapter-${pad(ch.number)}.json`);
-        if(Array.isArray(verses) && verses.length) VERSES_BY_CHAPTER[ch.number] = verses;
-      }catch(e){ /* falls back to "hasn't been written yet" empty state */ }
+        const chapter = await fetchJSON(`data/${filename}`);
+        const verses = Array.isArray(chapter.verses) ? chapter.verses : [];
+        const number = chapter.id != null ? chapter.id : positionalNumber;
+        if(verses.length) VERSES_BY_CHAPTER[number] = verses;
+        return {
+          number,
+          title: chapter.title || `Chapter ${number}`,
+          subtitle: chapter.subtitle || 'Placeholder chapter — verses added later',
+          verseCount: verses.length // always derived, never stored
+        };
+      }catch(e){
+        return {
+          number: positionalNumber,
+          title: `Chapter ${positionalNumber}`,
+          subtitle: 'Placeholder chapter — verses added later',
+          verseCount: 0
+        };
+      }
     }));
   }
 

@@ -47,9 +47,13 @@ kanha-jis-courtyard/
                             data-loading layer at the top (see §3 below)
   config.json             — app-level settings (see §3)
   data/
-    chapters.json          — metadata only for all 18 chapters (number, title, subtitle, verseCount)
-    chapter-01.json         — all 47 real verses for Chapter 1, full schema (see §4)
-    chapter-NN.json         — (future) one file per chapter that has real content
+    chapters.json          — lightweight manifest only: an ordered array of chapter
+                            filenames (e.g. "chapter-01.json"). No title, subtitle,
+                            or verse count lives here anymore (see Session 15).
+    chapter-01.json         — self-contained: { id, title, subtitle, verses: [...] }.
+                            Verse count is never stored — always verses.length.
+    chapter-NN.json         — (future) one file per chapter that has real content,
+                            same self-contained shape
   assets/
     audio/, icons/, images/ — currently empty (see their own README.md for why); ambient
                               sound is streamed from remote CDN URLs today, no local audio yet
@@ -75,24 +79,38 @@ tension explicitly to the person rather than silently re-inlining anything.
 
 ## 3. How data loading works (`app.js`)
 
+**As of Session 15, `data/chapters.json` is a manifest only — no metadata.**
+There is exactly one place a chapter's title, subtitle, and id live: the
+chapter's own file. Verse count is never stored anywhere; it is always
+`verses.length`, computed at load time. This was a deliberate fix for
+metadata duplication/drift (see CHANGELOG → Session 15) — do not reintroduce
+title/subtitle/verseCount fields into `chapters.json`.
+
 Near the top of `app.js`:
 
 ```js
 let CONFIG = { version, appTitle, defaultTheme, defaultAmbience,
                 reducedMotionDefault, defaultVolume };  // fallback mirror of config.json
-let CHAPTERS = [ ...18 placeholder entries... ];         // fallback mirror of data/chapters.json
+const FALLBACK_MANIFEST = [ "chapter-01.json", ..., "chapter-18.json" ]; // used only if data/chapters.json can't be fetched
+let CHAPTERS = [];                                       // built fresh each load from per-chapter files
 let VERSES_BY_CHAPTER = {};                              // populated per-chapter from data/chapter-NN.json
 ```
 
 `loadContent()` is an async function that:
 1. Fetches `config.json` and merges it over the fallback `CONFIG`.
-2. Fetches `data/chapters.json` and replaces the fallback `CHAPTERS` if it succeeds.
-3. For every chapter in `CHAPTERS` with a non-zero `verseCount`, fetches
-   `data/chapter-{NN}.json` (zero-padded, e.g. `chapter-01.json`,
-   `chapter-02.json`) and stores it in `VERSES_BY_CHAPTER[chapterNumber]`.
-4. Every fetch is independently try/caught. If a file is missing, or the
-   page is opened without a server, the app silently falls back to its
-   built-in defaults / empty states — it never throws or shows a broken UI.
+2. Fetches `data/chapters.json` — the manifest — and falls back to
+   `FALLBACK_MANIFEST` (18 filenames, `chapter-01.json`…`chapter-18.json`)
+   if that fetch fails.
+3. For every filename in the manifest, in order, fetches `data/{filename}`
+   and reads its own `id`, `title`, `subtitle`, and `verses` array directly
+   off that file. `verseCount` for that chapter is always `verses.length`.
+   If the fetch fails (file doesn't exist yet, or no server), that chapter
+   falls back to a placeholder row (`Chapter N` / "Placeholder chapter —
+   verses added later" / 0 verses) using its position in the manifest as
+   the chapter number.
+4. Every per-chapter fetch is independently try/caught, so one missing
+   chapter never breaks the others. The app never throws or shows a
+   broken UI, exactly as before.
 
 `init()` (the last thing in `app.js`) is now `async` and does
 `await loadContent()` before calling `renderChapters()`, `renderEmotions()`,
@@ -100,13 +118,16 @@ etc. Everything else in `init()` runs in the exact same order as before.
 
 **Adding Chapter 2 (or any chapter) requires zero changes to `app.js` or
 `index.html`.** Just:
-1. Add `data/chapter-02.json` — an array of verse objects (see schema in §4).
-2. Update that chapter's entry in `data/chapters.json`: real `title`,
-   `subtitle`, and `verseCount` (matching the array length).
+1. Add `data/chapter-02.json` in the self-contained shape:
+   `{ "id": 2, "title": "...", "subtitle": "...", "verses": [ ... ] }`
+   (verse objects follow the schema in §4).
+2. Make sure `"chapter-02.json"` is listed in `data/chapters.json` at the
+   right position (it already is, for all 18 chapters, as placeholders).
 
-That's the entire task. `renderChapters()`, `renderVerseList()`,
-`getVersesForChapter()`, and `renderVerseDetail()` already read this data
-generically — none of them reference a chapter number literally.
+That's the entire task — no separate metadata file to keep in sync.
+`renderChapters()`, `renderVerseList()`, `getVersesForChapter()`, and
+`renderVerseDetail()` already read this data generically — none of them
+reference a chapter number literally.
 
 A handful of `Storage.get(key, <literal default>)` calls were changed to
 `Storage.get(key, CONFIG.<field>)` (theme default, reduced-motion default,

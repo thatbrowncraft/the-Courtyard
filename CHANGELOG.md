@@ -764,3 +764,88 @@ for both — because that's genuinely what the metadata said.
    assuming the JS broke — this session's bug was a stale data file, not
    application logic.
 3. Chapters 4–18 remain fully unwritten.
+
+## Session 15 — Data architecture: eliminate duplicated chapter metadata (no redesign, no new features)
+
+### What was built
+Removed the standing duplication between `data/chapters.json` and each
+`data/chapter-NN.json`: title, subtitle, and verse count used to be typed
+twice (once in the manifest, once implicitly in the verse file itself via
+its array length), which is exactly what let Session 14's "0 verses" bug
+happen in the first place — a metadata file getting out of sync with the
+content it described.
+
+- **`data/chapters.json`** is now only a lightweight manifest: an ordered
+  JSON array of chapter filenames (`"chapter-01.json"` … `"chapter-18.json"`).
+  No `title`, `subtitle`, or `verseCount` field remains in this file.
+- **`data/chapter-01.json`, `chapter-02.json`, `chapter-03.json`** were
+  updated directly, in place, to the new self-contained shape:
+  `{ "id": N, "title": "...", "subtitle": "...", "verses": [ ...unchanged
+  verse array... ] }`. Only the wrapper was added — every verse object
+  inside `verses` was diffed against the pre-session file and confirmed
+  identical; nothing about the verse content itself changed. Verse counts
+  (47 / 72 / 43) were confirmed to match `verses.length` exactly for all
+  three files — this also incidentally confirms Chapter 3's array really
+  is 43 items, closing part of the open question in README §7 (the
+  *count* is now verified; tone/schema/quality of Chapter 3's content is
+  still unverified, see Suggestions below).
+- **`app.js` → `loadContent()`** was rewritten to read the manifest, then
+  fetch each listed chapter file and derive that chapter's row (`number`,
+  `title`, `subtitle`, `verseCount`) directly from what the file reports.
+  A chapter file that's missing or unreachable (not yet written) falls
+  back to the same placeholder row behavior as before (`Chapter N` /
+  "Placeholder chapter — verses added later" / 0 verses), using its
+  position in the manifest as the chapter number. The old two-step
+  "fetch chapters.json, then fetch chapter-NN.json only if verseCount > 0"
+  logic is gone — replaced by a single per-file fetch-and-derive step.
+
+The repository now already contains the final architecture — there is no
+migration step, script, or follow-up task required. Adding chapter 4 (or
+any future chapter) is just: write `data/chapter-04.json` in the
+self-contained shape above; its filename is already listed in the manifest.
+
+### What was NOT touched
+- No rendering, layout, CSS, or interaction logic changed.
+  `renderChapters()`, `renderVerseList()`, `getVersesForChapter()`, and
+  `renderVerseDetail()` all still read `CHAPTERS`/`VERSES_BY_CHAPTER` the
+  exact same way — they don't know or care that the underlying fetch
+  strategy changed.
+- Verse content (the `sanskrit`, `translation`, `teaching`, etc. fields per
+  verse, for all 47+72+43 verses across the three written chapters) is
+  completely unchanged — confirmed by diffing the `verses` array in each
+  updated file against the pre-session version, field for field.
+- `config.json` loading, `CONFIG` fallback, arrival ritual, journal, stats,
+  ambient sound, and every other subsystem: untouched.
+
+### Why this matters
+Session 14's root-cause bug was a stale/never-updated `chapters.json`
+disagreeing with the real chapter files. With verse count now *derived*
+rather than *stored*, that specific class of bug — metadata claiming a
+count that doesn't match the actual content — can't recur, because there's
+no longer a second number to fall out of sync.
+
+### Verification performed
+- `node --check app.js` — parses with no syntax errors.
+- Full diff of `app.js` against the pre-session version — only the
+  `loadContent()`/`CHAPTERS`/`VERSES_BY_CHAPTER` setup block changed;
+  every rendering function, event handler, and every other line is
+  byte-identical.
+- For each of `chapter-01.json`, `chapter-02.json`, `chapter-03.json`:
+  parsed both the pre-session and post-session file and asserted the
+  `verses` array is deep-equal between them — confirms the wrapping added
+  metadata without altering a single verse field.
+- Confirmed `verses.length` for each file (47, 72, 43) matches both the
+  old `chapters.json`'s `verseCount` and the received text's canonical
+  chapter lengths.
+- Ran `loadContent()` end-to-end against the real, updated data files in
+  an isolated harness (no browser needed — `fetch` mocked to read from
+  disk): chapters 1–3 correctly produced their real title, subtitle, and
+  derived verse count; chapters 4–18 (no file yet) correctly fell back to
+  placeholder rows using their position in the manifest.
+
+### Suggestions for next session
+1. Chapter 3's *content* — tone, schema completeness, adherence to the
+   voice standard in README §6 — is still unverified (only its verse
+   *count* was confirmed this session, see above). A future session should
+   open `chapter-03.json` and check it the way Chapter 1 was checked.
+2. Chapters 4–18 remain fully unwritten.
