@@ -1,0 +1,1 @@
+This folder is reserved for local audio files (e.g. a bansuri/flute loop for AMBIENCE_SOURCES.flute.url in app.js). Currently the app streams ambient sound from remote CDN URLs — see the AMBIENCE_SOURCES constant in app.js.
