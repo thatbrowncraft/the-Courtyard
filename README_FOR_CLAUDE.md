@@ -1,0 +1,215 @@
+# Kanha Ji's Courtyard — Project Memory
+
+Read this file in full before doing any work on this project. It exists so a
+future Claude conversation can continue without the person needing to
+re-explain anything.
+
+---
+
+## 1. What this project is
+
+A personal, non-commercial, offline-first Bhagavad Gita companion web app.
+Not a productivity tool. Not gamified. It exists for moments of emotional
+difficulty, overwhelm, or a desire for peace — the person opens it, is asked
+"How is your heart today?", and is met with a verse, a reflection, and a
+quiet place to sit.
+
+**North star, repeated because it overrides every other instinct a coding
+assistant might have: peaceful, not productive.** No streaks, no badges, no
+achievements, no completion percentages framed as goals, no "you're behind"
+messaging. If a feature idea nudges the person to do more, it's wrong for
+this app, no matter how good the engineering is.
+
+The app covers all 18 chapters / ~700 verses of the Gita. Chapter 1
+(47 verses) is fully written. Chapters 2–18 are placeholders.
+
+---
+
+## 2. Architecture (as of the Session 13 refactor)
+
+The project was a single `index.html` file (HTML+CSS+JS inline) through
+Session 12. Session 13 split it into the structure below **without changing
+a single pixel or behavior** — every line of CSS and every line of body HTML
+was moved verbatim; the only JS logic changes were (a) replacing hardcoded
+chapter/verse data with a `fetch()`-based loader and (b) sourcing a handful
+of default values from `config.json` instead of literals. See
+`CHANGELOG.md` → Session 13 for the exact diff summary.
+
+```
+kanha-jis-courtyard/
+  index.html              — structure only: HTML + <link>/<script> tags. No inline CSS or JS.
+  styles.css              — all CSS, in the original cascade order (variables → layout →
+                            components → animations → arrival ritual → responsive, etc.)
+  app.js                  — all JS, wrapped in the same top-level IIFE as before, plus a
+                            data-loading layer at the top (see §3 below)
+  config.json             — app-level settings (see §3)
+  data/
+    chapters.json          — metadata only for all 18 chapters (number, title, subtitle, verseCount)
+    chapter-01.json         — all 47 real verses for Chapter 1, full schema (see §4)
+    chapter-NN.json         — (future) one file per chapter that has real content
+  assets/
+    audio/, icons/, images/ — currently empty (see their own README.md for why); ambient
+                              sound is streamed from remote CDN URLs today, no local audio yet
+  README_FOR_CLAUDE.md     — this file
+  CHANGELOG.md             — session-by-session history
+```
+
+**This app must be served over HTTP to work**, e.g.:
+```
+cd kanha-jis-courtyard
+python3 -m http.server 8000
+# open http://localhost:8000/
+```
+Opening `index.html` directly via `file://` will fail to load the JSON data
+files in most browsers (CORS blocks `fetch()` of local files under `file://`).
+This is an inherent tradeoff of moving to real data files instead of an
+inline array, and was implicit in the refactor brief that asked for this
+structure. If true zero-server, double-click-to-open behavior is ever
+required again, that would mean reverting to inline data — flag that
+tension explicitly to the person rather than silently re-inlining anything.
+
+---
+
+## 3. How data loading works (`app.js`)
+
+Near the top of `app.js`:
+
+```js
+let CONFIG = { version, appTitle, defaultTheme, defaultAmbience,
+                reducedMotionDefault, defaultVolume };  // fallback mirror of config.json
+let CHAPTERS = [ ...18 placeholder entries... ];         // fallback mirror of data/chapters.json
+let VERSES_BY_CHAPTER = {};                              // populated per-chapter from data/chapter-NN.json
+```
+
+`loadContent()` is an async function that:
+1. Fetches `config.json` and merges it over the fallback `CONFIG`.
+2. Fetches `data/chapters.json` and replaces the fallback `CHAPTERS` if it succeeds.
+3. For every chapter in `CHAPTERS` with a non-zero `verseCount`, fetches
+   `data/chapter-{NN}.json` (zero-padded, e.g. `chapter-01.json`,
+   `chapter-02.json`) and stores it in `VERSES_BY_CHAPTER[chapterNumber]`.
+4. Every fetch is independently try/caught. If a file is missing, or the
+   page is opened without a server, the app silently falls back to its
+   built-in defaults / empty states — it never throws or shows a broken UI.
+
+`init()` (the last thing in `app.js`) is now `async` and does
+`await loadContent()` before calling `renderChapters()`, `renderEmotions()`,
+etc. Everything else in `init()` runs in the exact same order as before.
+
+**Adding Chapter 2 (or any chapter) requires zero changes to `app.js` or
+`index.html`.** Just:
+1. Add `data/chapter-02.json` — an array of verse objects (see schema in §4).
+2. Update that chapter's entry in `data/chapters.json`: real `title`,
+   `subtitle`, and `verseCount` (matching the array length).
+
+That's the entire task. `renderChapters()`, `renderVerseList()`,
+`getVersesForChapter()`, and `renderVerseDetail()` already read this data
+generically — none of them reference a chapter number literally.
+
+A handful of `Storage.get(key, <literal default>)` calls were changed to
+`Storage.get(key, CONFIG.<field>)` (theme default, reduced-motion default,
+ambient volume default, last-ambience default). The literal values inside
+the fallback `CONFIG` object above are intentionally identical to the old
+literals, so behavior is unchanged whether or not `config.json` is
+reachable.
+
+---
+
+## 4. Verse schema (per entry in a `chapter-NN.json` array)
+
+Every verse object has this exact shape. Do not simplify or drop fields —
+future chapters must match this schema exactly, since `renderVerseDetail()`
+reads all of them:
+
+```json
+{
+  "chapter": 1,
+  "verse": 1,
+  "index": "Chapter 1, Verse 1",
+  "title": "Where It All Begins",
+  "sanskrit": "Devanagari text, \\n-separated lines",
+  "transliteration": "IAST transliteration, \\n-separated lines",
+  "translation": "Plain-English rendering of the verse",
+  "historicalContext": "Narrative/scholarly context",
+  "teaching": "Krishna's Teaching — the doctrinal point",
+  "modernReflection": "180–300 word first-person-adjacent essay connecting the verse to a modern emotional situation (see Session 12 standard)",
+  "ifKanhaSatBeside": "Short, warm, second-person line — 'If Kanha Ji sat beside you today...'",
+  "takeaway": "One-sentence distillation",
+  "questions": ["Reflection question 1", "Reflection question 2"],
+  "tags": ["short", "topic", "tags"],
+  "emotions": ["emotion-ids this verse maps to, e.g. 'anxious', 'lost'"],
+  "keywords": ["search keywords"],
+  "related": ["Chapter X, Verse Y", "..."]
+}
+```
+
+Sanskrit is the received public-domain scripture text. Every other field
+(translation, historicalContext, teaching, modernReflection,
+ifKanhaSatBeside, takeaway, questions, tags, emotions, keywords, related) is
+written fresh for this project and must match the tone already established
+in Chapter 1 — see §6.
+
+`emotions`, `keywords`, and `related` exist in the data for every Chapter 1
+verse but are **not yet consumed by any template** — mood-matching, real
+search, and cross-referencing are still open future work, unrelated to the
+Session 13 refactor.
+
+---
+
+## 5. Standing rules for every future session (do not violate without explicit instruction)
+
+- **Never redesign.** Layout, colors, typography, animations, sounds,
+  navigation behavior, reading experience, ambient effects, existing
+  interactions all stay exactly as they are unless the person explicitly
+  asks for a visual/UX change in that session's brief.
+- **Never touch localStorage schema, routing, accessibility features,
+  journal, stats, or the arrival ritual structure** without explicit
+  instruction — these are load-bearing and other code depends on their
+  current shape.
+- **Preserve the "peaceful, not productive" north star** — reject or
+  flag any feature idea (even one the person asks for) that would turn the
+  app into a habit-loop, streak-tracker, or gamified product, and say so
+  plainly rather than building it quietly.
+- **Content sessions vs. interface sessions stay separate.** Verse content
+  (writing new chapters) should not require touching `app.js` rendering
+  logic, and interface sessions should not touch verse content. This
+  separation is why the JSON split exists.
+- **Every session ends with a changelog entry** in `CHANGELOG.md` covering:
+  what was built, what changed, what remains, what comes next. Follow the
+  existing format (see any past session for the pattern).
+- **Verify before declaring done.** Past sessions have run a syntax check
+  on the full script and diffed changed data fields against the
+  pre-session version to confirm nothing outside scope was touched. Do the
+  same: for interface work, byte-diff CSS/HTML that shouldn't have changed;
+  for content work, diff all fields except the one being edited.
+
+---
+
+## 6. Voice and tone reference (for writing new verse content)
+
+Kanha Ji's voice (used in `teaching`, `modernReflection`, `ifKanhaSatBeside`)
+is warm, direct, never clinical, never preachy. It speaks to "you" personally,
+connects the verse's emotional core to a specific, concrete modern situation
+(career pressure, family expectations, grief, social media, loneliness,
+self-worth — chosen per verse, not repeated formulaically), and never
+lectures. `modernReflection` entries run 180–300 words, structured as a
+personal essay rather than a summary, and never restate `translation` or
+`historicalContext` — they explore the emotional "why this still matters now."
+See Chapter 1's verses in `data/chapter-01.json` for 47 worked examples,
+including verse 46 as the model for how to gently point toward real support
+(trusted person, professional, crisis line) when a verse sits close to real
+despair, without turning clinical.
+
+---
+
+## 7. Known open items (not this session's job, listed for continuity)
+
+- Chapters 2–18: not started. Chapter 2 (Sankhya Yoga) is the natural next
+  chapter — it's where Krishna's direct teaching begins.
+- `emotions`, `keywords`, `related` fields exist in Chapter 1 data but are
+  unused by any template — mood-matching from the home screen, real search,
+  and cross-referencing are all still open.
+- `AMBIENCE_SOURCES.flute.url` in `app.js` is still an empty string — no
+  verified flute/bansuri recording has been sourced yet.
+- Audio currently streams from remote CDN URLs (Freesound), not from
+  `assets/audio/` — that folder is reserved for a future move to local
+  files, not yet done.

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanha Ji's Courtyard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="home">
+
+<!-- ARRIVAL RITUAL — click or press any key to skip -->
+<div id="arrival" aria-hidden="true">
+  <div id="arrivalDiya"><div class="a-glow"></div><div class="a-flame"></div><div class="a-bowl"></div></div>
+  <div id="arrivalDust"></div>
+  <div id="arrivalMist"></div>
+  <div id="arrivalFeather">
+    <svg viewBox="0 0 100 30" xmlns="http://www.w3.org/2000/svg"><path d="M2 26 Q40 4 98 2 Q60 10 40 16 Q60 14 92 6 Q55 18 38 20 Q54 18 80 12 Q50 24 2 26 Z" fill="none" stroke="#E0AE64" stroke-width="0.8"/></svg>
+  </div>
+  <div id="arrivalTitle">
+    <h1>Kanha Ji's Courtyard</h1>
+    <p>Whenever life becomes too loud… come sit beside me.</p>
+  </div>
+</div>
+
+<div id="stars"></div>
+<div id="courtyard" aria-hidden="true">
+  <svg id="banyan" viewBox="0 0 220 320" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#1C130C" d="M110 320 L104 210 Q70 205 55 180 Q30 175 28 145 Q15 130 30 110 Q25 90 50 82 Q45 60 70 55 Q75 30 105 30 Q130 15 155 35 Q180 30 190 55 Q205 65 195 90 Q210 110 195 130 Q205 155 180 165 Q175 190 145 200 Q135 208 116 210 L110 320 Z"/>
+    <path stroke="#1C130C" stroke-width="2" fill="none" d="M104 210 Q100 250 96 300 M116 210 Q120 250 124 300"/>
+  </svg>
+  <div class="floor"></div>
+  <div id="templeWall"></div>
+  <div class="pillar left"></div>
+  <div class="pillar right"></div>
+  <div id="mandala">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#F1E3C6" stroke-width="0.6">
+      <circle cx="100" cy="100" r="90"/><circle cx="100" cy="100" r="66"/><circle cx="100" cy="100" r="40"/>
+      <path d="M100 10 L100 190 M10 100 L190 100 M35 35 L165 165 M165 35 L35 165"/>
+    </svg>
+  </div>
+  <div class="hbell" style="left:14%; animation-delay:-2s;"><svg viewBox="0 0 10 34" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="0" x2="5" y2="8" stroke="#8A6A3A" stroke-width="1"/><path d="M1 8 Q5 6 9 8 L8 24 Q5 28 2 24 Z" fill="none" stroke="#C08A3E" stroke-width="0.9"/></svg></div>
+  <div class="hbell" style="right:16%; animation-delay:-6s;"><svg viewBox="0 0 10 34" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="0" x2="5" y2="8" stroke="#8A6A3A" stroke-width="1"/><path d="M1 8 Q5 6 9 8 L8 24 Q5 28 2 24 Z" fill="none" stroke="#C08A3E" stroke-width="0.9"/></svg></div>
+  <div id="shadowDrift"></div>
+</div>
+<div id="atmosphere" aria-hidden="true"></div>
+<div id="moon" aria-hidden="true"></div>
+<div id="ambient"></div>
+<div id="feather-wander" aria-hidden="true">
+  <svg viewBox="0 0 100 30" xmlns="http://www.w3.org/2000/svg"><path d="M2 26 Q40 4 98 2 Q60 10 40 16 Q60 14 92 6 Q55 18 38 20 Q54 18 80 12 Q50 24 2 26 Z" fill="none" stroke="#E0AE64" stroke-width="0.8"/></svg>
+</div>
+
+<!-- Kanha Ji's corner: a small wooden platform holding a diya, a peacock feather, and a flute — left quietly for you -->
+<div id="krishna-corner" aria-hidden="true">
+  <div class="kj-platform">
+    <div id="diya"><div class="flame"></div><div class="bowl"></div></div>
+    <div class="kj-feather">
+      <svg viewBox="0 0 30 60" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 58 L14 22" stroke="#8A6A3A" stroke-width="1.1" fill="none"/>
+        <path d="M15 22 Q4 16 5 4 Q11 12 15 20 Q19 12 25 4 Q26 16 15 22 Z" fill="none" stroke="#E0AE64" stroke-width="1"/>
+        <circle cx="15" cy="9" r="3.2" fill="none" stroke="#E0AE64" stroke-width="1"/>
+        <circle cx="15" cy="9" r="1.1" fill="#3B7A5A" opacity="0.7"/>
+      </svg>
+    </div>
+    <div class="kj-flute">
+      <svg viewBox="0 0 60 10" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="3.5" width="56" height="3" rx="1.5" fill="#5C3A1E"/>
+        <circle cx="16" cy="5" r="0.9" fill="#2A1D13"/>
+        <circle cx="26" cy="5" r="0.9" fill="#2A1D13"/>
+        <circle cx="36" cy="5" r="0.9" fill="#2A1D13"/>
+        <circle cx="46" cy="5" r="0.9" fill="#2A1D13"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div id="soundControl">
+  <button id="soundToggle" aria-label="Ambient sound" aria-expanded="false" aria-controls="soundPanel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" xmlns="http://www.w3.org/2000/svg" style="color:var(--ivory-dim)">
+      <line x1="3" y1="12" x2="21" y2="9"/>
+      <circle cx="6" cy="13.2" r="1.4"/><circle cx="10" cy="12.5" r="1.4"/><circle cx="14" cy="11.7" r="1.4"/><circle cx="18" cy="11" r="1.4"/>
+    </svg>
+  </button>
+  <div id="soundPanel">
+    <button data-sound="temple" aria-pressed="false">Temple Courtyard</button>
+    <button data-sound="flute" aria-pressed="false">Krishna's Flute</button>
+    <button data-sound="river" aria-pressed="false">Yamuna River</button>
+    <button data-sound="wind" aria-pressed="false">Banyan Breeze</button>
+    <button data-sound="insects" aria-pressed="false">Village Evening</button>
+    <button id="soundOff" aria-pressed="false">Silent Courtyard</button>
+    <div class="sound-volume-row">
+      <label for="soundVolume">Vol</label>
+      <input type="range" id="soundVolume" min="0" max="100" value="45" aria-label="Ambient sound volume">
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <span class="brand-text">Kanha Ji's Courtyard</span>
+  </div>
+  <nav id="mainNav" aria-label="Primary">
+    <button data-view="home" class="active">Home</button>
+    <button data-view="chapters">Chapters</button>
+    <button data-view="search">Search</button>
+    <button data-view="collections">Collections</button>
+    <button data-view="journal">Journal</button>
+    <button data-view="meditation">Meditation</button>
+    <button data-view="stats">Journey</button>
+    <button data-view="settings">Settings</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- HOME -->
+  <section class="view active" id="view-home">
+    <div class="hero">
+      <div class="eyebrow">welcome back</div>
+      <h1>How is your heart today?</h1>
+      <p>There is no wrong answer, and nothing here is timed. Sit for a moment, choose what feels true right now, and let the courtyard meet you there.</p>
+    </div>
+
+    <div class="emotion-list" id="emotionGrid" role="group" aria-label="Choose how you feel">
+      <!-- injected -->
+    </div>
+
+    <div class="home-response" id="homeResponse" aria-live="polite"></div>
+
+    <div class="quick-links">
+      <button data-view="chapters">Browse chapters</button>
+      <span class="ql-sep">·</span>
+      <button data-view="journal">Open journal</button>
+      <span class="ql-sep">·</span>
+      <button data-view="meditation">Just breathe</button>
+    </div>
+  </section>
+
+  <!-- CHAPTERS -->
+  <section class="view" id="view-chapters">
+    <div class="section-shell">
+      <h2>Chapters</h2>
+      <p class="section-sub">Eighteen chapters will live here. Content is placeholder until the verses are written.</p>
+      <div id="chapterList"></div>
+    </div>
+  </section>
+
+  <!-- VERSE LIST (per chapter) -->
+  <section class="view" id="view-verses">
+    <div class="section-shell">
+      <button id="backToChapters" class="back-link">&larr; back to chapters</button>
+      <h2 id="verseListTitle">Chapter</h2>
+      <p class="section-sub" id="verseListSub"></p>
+      <div id="verseList"></div>
+    </div>
+  </section>
+
+  <!-- CHAPTER DETAIL / VERSE -->
+  <section class="view" id="view-verse">
+    <div class="section-shell">
+      <button id="backToVerses" class="back-link">&larr; back to verses</button>
+      <div id="verseDetail"></div>
+    </div>
+  </section>
+
+  <!-- SEARCH -->
+  <section class="view" id="view-search">
+    <div class="section-shell">
+      <h2>Search</h2>
+      <p class="section-sub">Search across verses, tags, and moods once real content is added.</p>
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search by feeling, word, or chapter…" aria-label="Search">
+      </div>
+      <div id="searchResults">
+        <div class="empty-state">
+          <span class="glyph" aria-hidden="true">❦</span>
+          <p>The scriptures are still finding their place here.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLLECTIONS -->
+  <section class="view" id="view-collections">
+    <div class="section-shell">
+      <h2>Collections</h2>
+      <p class="section-sub">Save verses that speak to you into your own gathered collections.</p>
+      <div class="empty-state" id="collectionsEmpty">
+        <span class="glyph" aria-hidden="true">❦</span>
+        <p>Every verse you save will quietly wait for you here.</p>
+        <button id="createCollectionBtn">Create a collection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOURNAL -->
+  <section class="view" id="view-journal">
+    <div class="section-shell">
+      <h2>Journal</h2>
+      <p class="section-sub">A quiet place to write. Nothing here is graded, tracked toward a streak, or shown to anyone.</p>
+      <div class="card">
+        <textarea class="journal-input" id="journalInput" placeholder="Tell Kanha Ji what's on your heart…"></textarea>
+      </div>
+      <div class="journal-actions">
+        <button class="btn-primary" id="saveJournalBtn">Save entry</button>
+      </div>
+      <div id="journalEntries"></div>
+    </div>
+  </section>
+
+  <!-- MEDITATION -->
+  <section class="view" id="view-meditation">
+    <div class="section-shell" style="text-align:center;">
+      <h2>A moment to breathe</h2>
+      <p class="section-sub">In for four. Hold for four. Out for six. No timer pressure, just a shape to follow.</p>
+      <div class="breath-circle">breathe</div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="view" id="view-stats">
+    <div class="section-shell">
+      <h2>Your journey</h2>
+      <p class="section-sub">Gentle reflection, not a scoreboard. Nothing here is a target to hit.</p>
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-number" id="statVerses">0</span><span class="stat-label">verses visited</span></div>
+        <div class="stat-card"><span class="stat-number" id="statJournal">0</span><span class="stat-label">journal entries</span></div>
+        <div class="stat-card"><span class="stat-number" id="statDays">1</span><span class="stat-label">days you've returned</span></div>
+        <div class="stat-card"><span class="stat-number" id="statMood">—</span><span class="stat-label">most chosen feeling</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="section-shell">
+      <h2>Settings</h2>
+      <p class="section-sub">Shape the courtyard to fit you.</p>
+      <div class="card">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Reduce animation</div>
+            <div class="setting-desc">Turns off drifting light, mist, and flicker for a stiller experience</div>
+          </div>
+          <button class="switch" id="toggleMotion" aria-pressed="false"></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Time of day theme</div>
+            <div class="setting-desc">Choose the light your courtyard sits in</div>
+          </div>
+          <div class="theme-options">
+            <button class="theme-dot active" style="background:#3B2A1C" data-theme="dusk" aria-label="Dusk" aria-pressed="true"></button>
+            <button class="theme-dot" style="background:#160F0A" data-theme="night" aria-label="Night" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#4A3520" data-theme="dawn" aria-label="Dawn" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Replay the welcome</div>
+            <div class="setting-desc">See the arrival sequence again, right now</div>
+          </div>
+          <button id="replayWelcomeBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Replay</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Clear journal &amp; history</div>
+            <div class="setting-desc">This cannot be undone</div>
+          </div>
+          <button id="clearDataBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Clear</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Come back whenever your heart needs a quiet place.</footer>
+
+<script src="app.js"></script>
+
+</body>
+</html>
