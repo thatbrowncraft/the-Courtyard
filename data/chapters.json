@@ -1,110 +1,20 @@
 [
-  {
-    "number": 1,
-    "title": "Arjuna's Despair",
-    "subtitle": "On the battlefield of Kurukshetra, before a single word of teaching is spoken",
-    "verseCount": 47
-  },
-  {
-    "number": 2,
-    "title": "Sankhya Yoga",
-    "subtitle": "Krishna answers grief with the nature of the eternal self, and teaches Arjuna to act without attachment to outcome",
-    "verseCount": 72
-  },
-  {
-    "number": 3,
-    "title": "Karma Yoga",
-    "subtitle": "The path of selfless action — how to work fully in the world without being bound by its results",
-    "verseCount": 43
-  },
-  {
-    "number": 4,
-    "title": "Chapter 4",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 5,
-    "title": "Chapter 5",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 6,
-    "title": "Chapter 6",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 7,
-    "title": "Chapter 7",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 8,
-    "title": "Chapter 8",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 9,
-    "title": "Chapter 9",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 10,
-    "title": "Chapter 10",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 11,
-    "title": "Chapter 11",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 12,
-    "title": "Chapter 12",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 13,
-    "title": "Chapter 13",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 14,
-    "title": "Chapter 14",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 15,
-    "title": "Chapter 15",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 16,
-    "title": "Chapter 16",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 17,
-    "title": "Chapter 17",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  },
-  {
-    "number": 18,
-    "title": "Chapter 18",
-    "subtitle": "Placeholder chapter — verses added later",
-    "verseCount": 0
-  }
+  "chapter-01.json",
+  "chapter-02.json",
+  "chapter-03.json",
+  "chapter-04.json",
+  "chapter-05.json",
+  "chapter-06.json",
+  "chapter-07.json",
+  "chapter-08.json",
+  "chapter-09.json",
+  "chapter-10.json",
+  "chapter-11.json",
+  "chapter-12.json",
+  "chapter-13.json",
+  "chapter-14.json",
+  "chapter-15.json",
+  "chapter-16.json",
+  "chapter-17.json",
+  "chapter-18.json"
 ]
