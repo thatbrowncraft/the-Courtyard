@@ -726,8 +726,16 @@
     document.body.classList.toggle('reading-mode', id === 'verse');
   }
 
+  // Scoped to real nav buttons only. <body> also carries a `data-view`
+  // attribute (set by showView(), just a CSS/state hook for the current
+  // view) — an unscoped closest('[data-view]') matches body on every
+  // click anywhere on the page, since body is an ancestor of everything.
+  // That fired a second, stale setRoute() right behind any real one
+  // (e.g. a chapter-row click), clobbering it before its hashchange had
+  // even landed. Restricting the selector to actual <button data-view>
+  // elements (nav bar + quick-links) removes body from matching at all.
   document.body.addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-view]');
+    const btn = e.target.closest('button[data-view]');
     if(btn) setRoute({ view: btn.dataset.view });
   });
 

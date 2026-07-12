@@ -1014,3 +1014,64 @@ manifest — flagging this now rather than silently picking a direction.
 - Everything else from Session 15/16 and README §7's open items is
   unchanged, including the unsourced flute ambience and Chapter 3's
   unverified content.
+
+## Session 18 — Fix chapter-row click getting clobbered (regression fix only)
+
+### The bug
+Clicking a chapter row correctly set the route to `#/chapter/N`, but the
+app immediately snapped back to the Chapters overview instead of opening
+the verse list.
+
+### Root cause — not the load chain, a click-delegation collision
+Traced the full click path end to end. `goToRoute()` already awaits
+`loadChapterVerses()` before calling `renderVerseList()`/`showView()` —
+that chain was never broken. The actual cause: `showView()` sets
+`document.body.dataset.view = id` as a plain CSS/state hook, and the
+generic nav click delegator did `e.target.closest('[data-view]')` with
+no scoping. Since `<body>` always carries that attribute, *any* click
+anywhere in the app eventually bubbles to `<body>` and matches it too.
+
+Sequence on a chapter-row click:
+1. The dedicated `#chapterList` listener fires first, calls
+   `setRoute({view:'verses', chapter:N})` → `location.hash = '#/chapter/N'`.
+2. The same click keeps bubbling (still synchronous) up to `<body>`,
+   where `closest('[data-view]')` now matches `<body>` itself — its
+   `data-view` is still the *old* value ("chapters"), since that only
+   updates once `hashchange` actually processes.
+3. That fires a second `setRoute({view:'chapters'})`, setting
+   `location.hash = '#/chapters'` right on top of the first change.
+4. Both queued `hashchange` events land in order; the last one wins —
+   the app ends up back on Chapters.
+
+This collision already existed before Session 17, but stayed invisible:
+back then `CHAPTERS.find(c => c.number === route.chapter)` always failed
+(CHAPTERS was an array of filename strings), so a chapter click already
+redirected to Home before reaching this code. Fixing the metadata bug in
+Session 17 let chapter clicks succeed for the first time, which is what
+exposed this pre-existing bug.
+
+### The fix
+One line: scoped the generic delegator's selector from `[data-view]` to
+`button[data-view]`, so it only matches the real nav bar and quick-link
+buttons (all genuinely `<button>` elements) and never the `<body>` tag's
+state attribute.
+
+### What changed, file by file
+- `app.js`: the `document.body.addEventListener('click', ...)` selector
+  only. Nothing else touched — routing, manifest, `CHAPTERS`,
+  `loadChapterVerses()`, `renderChapters()` all unchanged from Session 17.
+
+### What was verified
+- `node --check app.js` passes.
+- Traced Chapter → Verse List, Verse → Verse Detail, and the shared
+  `hashchange`/Back-Forward/refresh path against the fixed code — all
+  route through the same unmodified `goToRoute()`/`loadChapterVerses()`
+  chain, now no longer clobbered by the stray second `setRoute()` call.
+- Confirmed via grep this was the only unscoped `[data-view]` delegator
+  in the file.
+
+### Genuine limitations / what remains
+- Still not confirmed in a live browser (none available here) — the
+  standing recommendation applies: click into a chapter, open a verse,
+  use Back/Forward across chapters and verses, and refresh mid-verse.
+- Everything else from Session 17 and README §7 is unchanged.
