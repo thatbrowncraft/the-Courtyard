@@ -1508,3 +1508,141 @@ This session added exactly one new file: a GitHub Actions workflow.
   could be inspected directly in this session.
 - The default branch name (assumed `main` above) was not confirmed
   against the actual repository, since none was available to check.
+
+## Session 23 — Offline-first PWA conversion
+
+### Scope
+Pure PWA conversion, added alongside the existing architecture rather than
+inside it. Nothing in routing, lazy loading, chapter loading, ambience
+architecture, the audio manifest, GitHub Actions, JSON files, verse
+rendering, search, collections, journal, progress tracking, resume
+reading, layout, typography, or animations was changed. All new logic
+lives in two new files (`service-worker.js`, `pwa.js`) so it can be
+reviewed, changed, or removed independently of `app.js`.
+
+### What was built
+- **`manifest.webmanifest`** — app name, standalone display, portrait
+  orientation, theme/background colors matched to the courtyard's ink/gold
+  palette (`--ink` / `--ink-deep` from `styles.css`), and an icon set
+  including maskable variants.
+- **`assets/icons/`** — a new diya (oil lamp) glyph generated to match the
+  existing `#krishna-corner` motif and palette: `icon-192.png`,
+  `icon-512.png`, maskable `icon-maskable-192.png` /
+  `icon-maskable-512.png`, `apple-touch-icon.png`, and two favicon sizes.
+  This folder was previously empty (see its own README note) — this is
+  the first real content in it.
+- **`service-worker.js`** — new file, all caching logic:
+  - Precaches the app shell (`index.html`, `styles.css`, `app.js`,
+    `pwa.js`, `manifest.webmanifest`, `config.json`, `data/chapters.json`,
+    `assets/audio/audio.json`, and the icon set) on install.
+  - Cache-versioned via a `CACHE_VERSION` constant at the top of the file —
+    bump it alongside `config.json`'s `version` on any deploy that touches
+    shell files, and old caches are deleted automatically on activate.
+  - Chapter files (`data/chapter-NN.json`) are **not** precached — they're
+    cached the first time `loadChapterVerses()` actually fetches them
+    (cache-first-after-fetch), so lazy loading is unchanged and a chapter
+    only becomes available offline after it's been opened once.
+  - Ambience MP3s are cached the first time they're actually requested —
+    which, because `<audio>` elements use `preload="none"` and only get a
+    `src` on an actual play, means "cached after first play" falls out of
+    the existing lazy architecture for free. A custom range-request layer
+    fetches and caches the *whole* file on first play, then serves sliced
+    206 responses from that cached copy for every subsequent (including
+    fully offline) request, so looping and the crossfade logic in
+    `SoundScape` keep working without any changes to `app.js`.
+  - The ambience cache is deliberately **not** wiped on version bumps
+    (large files, rarely change); the app-shell/data caches are.
+  - Google Fonts requests are cached after first fetch (cache-first),
+    covering the "fonts" requirement without hardcoding font URLs.
+  - Navigation requests (page loads/refreshes) are served from the cached
+    `index.html` shell so a refresh works offline.
+  - Never calls `skipWaiting()` on its own — a new version sits "waiting"
+    until the person taps "Refresh Now" in the update banner (see below).
+- **`pwa.js`** — new file, all registration/UI glue:
+  - Registers the service worker.
+  - Listens for `online`/`offline` and shows/hides a small, dismissible
+    banner: *"The Courtyard is resting offline with you."* — never a
+    browser network error.
+  - Listens for a waiting service worker and shows a banner: *"A newer
+    version of the Courtyard is ready."* with **Refresh Now** / **Later**
+    buttons. Refresh Now posts a message telling the waiting worker to
+    activate, then reloads once it takes over; Later just dismisses this
+    session's banner — the update is never forced.
+  - Listens for `beforeinstallprompt` and, only once the browser confirms
+    the app is installable, reveals one new optional row under Settings
+    ("Install the Courtyard") that triggers the native install prompt.
+    Hides itself again after `appinstalled`. This is additive to the
+    Settings view's existing `.card`, not a change to its existing rows.
+- **`index.html`**: added `<link rel="manifest">`, `theme-color`,
+  favicon/apple-touch-icon links, `apple-mobile-web-app-*` /
+  `mobile-web-app-capable` meta tags (for full-screen, no-browser-chrome
+  launching from the home screen), and a single `<script src="pwa.js" defer>`
+  tag after the existing `app.js` tag. No existing tags, view markup, or
+  ordering were changed.
+- **`styles.css`**: one new block appended at the very end for
+  `.pwa-banner` / `.pwa-offline-banner` / `.pwa-update-banner` /
+  `.pwa-banner-btn`, styled to match the existing palette and hairline/flat
+  button language already used elsewhere (e.g. the Settings "Replay" /
+  "Clear" buttons). Nothing above that new block was touched.
+
+### What was intentionally left alone
+- `app.js` was not modified at all. Chapter loading, routing, ambience
+  playback, journal, collections, stats, and reading-progress logic are
+  byte-for-byte what they were before this session.
+- `.github/workflows/audio-manifest.yml` and `generate_audio_manifest.py`
+  were not touched.
+- All existing JSON files (`config.json`, `data/chapters.json`,
+  `assets/audio/audio.json`, every `chapter-NN.json`) are unchanged.
+
+### What remains / worth knowing for next session
+- **`CACHE_VERSION` in `service-worker.js` needs a manual bump** whenever
+  a future session changes any precached shell file — there is no
+  automatic tie to `config.json`'s version number, by design, to avoid
+  adding an async fetch to the service worker's install step.
+- **Real-device verification is still needed.** This was built and
+  reasoned through without a live mobile browser or a deployed HTTPS
+  origin available in this session (service workers require HTTPS or
+  `localhost`). Before trusting it fully, a future session (or the
+  person, once deployed to GitHub Pages) should check: install on an
+  Android phone from the browser's install prompt and from the new
+  Settings row; confirm it opens full-screen with no browser chrome;
+  play one ambience, go offline, and confirm it keeps looping; open one
+  chapter, go offline, and confirm it's still readable; and confirm the
+  update banner appears (not just installs silently) after a real
+  `CACHE_VERSION` bump and redeploy.
+- The generated diya icon is a simple, original SVG-style glyph rendered
+  directly with Pillow (no external art), not sourced from anywhere — it
+  can be swapped for a hand-designed icon later without any code changes,
+  since `manifest.webmanifest` just points at file paths under
+  `assets/icons/`.
+- iOS Safari's PWA support is real but partial (no `beforeinstallprompt`,
+  Add to Home Screen only via the Share sheet) — the `apple-mobile-web-app-*`
+  meta tags cover full-screen launch and status-bar styling, but there's
+  no way to trigger the install flow programmatically on iOS the way the
+  new Settings row does on Android/Chrome.
+
+## Session 24 — Remove Apple/iOS-specific PWA support (Android-only target)
+
+### Scope
+Small follow-up to Session 23. This project now targets Android only, so
+everything added purely for iOS/Safari has been removed.
+
+### What changed
+- Deleted `assets/icons/apple-touch-icon.png`.
+- Removed from `index.html`: the `<link rel="apple-touch-icon">` tag and
+  the `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`,
+  and `apple-mobile-web-app-title` meta tags. `mobile-web-app-capable`
+  (the non-Apple, Chrome/Android equivalent) was kept.
+- Removed `assets/icons/apple-touch-icon.png` from the precache list in
+  `service-worker.js`.
+- Removed the iOS "Add to Home Screen via Safari's Share sheet"
+  instructions from `README.md`.
+
+### What was intentionally left alone
+- `manifest.webmanifest`, the maskable/standard icon set, `pwa.js`'s
+  install-prompt and banner logic, and everything else from Session 23 —
+  none of that was Apple-specific to begin with.
+
+### What remains
+- None — this was a clean removal. If Apple support is ever wanted again,
+  the Session 23 entry above documents exactly what to re-add.

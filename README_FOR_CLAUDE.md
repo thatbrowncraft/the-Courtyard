@@ -53,10 +53,16 @@ kanha-jis-courtyard/
                               may need adjusting for a given repository.
   index.html              — structure only: HTML + <link>/<script> tags. No inline CSS or JS.
   styles.css              — all CSS, in the original cascade order (variables → layout →
-                            components → animations → arrival ritual → responsive, etc.)
+                            components → animations → arrival ritual → responsive, etc.),
+                            plus one new block appended at the very end for PWA banners
+                            (Session 23 — see §8).
   app.js                  — all JS, wrapped in the same top-level IIFE as before, plus a
-                            data-loading layer at the top (see §3 below)
+                            data-loading layer at the top (see §3 below). Untouched by the
+                            Session 23 PWA conversion.
   config.json             — app-level settings (see §3)
+  manifest.webmanifest    — PWA install metadata (Session 23 — see §8)
+  service-worker.js       — offline caching logic (Session 23 — see §8)
+  pwa.js                  — install prompt + offline/update banner UI (Session 23 — see §8)
   data/
     chapters.json          — metadata only for all 18 chapters (number, title, subtitle, verseCount)
     chapter-01.json         — all 47 real verses for Chapter 1, full schema (see §4)
@@ -77,7 +83,10 @@ kanha-jis-courtyard/
                                 part of the normal workflow.
       temple.mp3, bansuri.mp3, river.mp3, banyan.mp3, village.mp3 — the five ambience
                                 audio files themselves (Session 20's local-audio move).
-    icons/, images/            — currently empty (see their own README.md for why)
+    icons/                     — PWA icon set (Session 23): a diya glyph generated to match
+                                the existing palette, at the sizes manifest.webmanifest
+                                references (including maskable variants). Previously empty.
+    images/                    — still empty; currently unused
   README_FOR_CLAUDE.md     — this file
   CHANGELOG.md             — session-by-session history
 ```
@@ -317,3 +326,44 @@ despair, without turning clinical.
   browser smoke test — open a verse, refresh, confirm it restores; try
   Back/Forward across chapters; try an invalid `#/chapter/999` URL — is
   recommended before trusting it fully.
+
+---
+
+## 8. PWA architecture (Session 23)
+
+The app is now an installable, offline-first PWA. This was added
+**alongside** the existing architecture, not inside it — `app.js` was not
+modified, and none of the standing rules in §5 were touched.
+
+- `manifest.webmanifest` — name/icons/colors/display mode. Colors are
+  pulled from `styles.css`'s `--ink` / `--ink-deep` variables (the default
+  Dusk theme), not re-invented.
+- `service-worker.js` — all caching. Precaches the app shell (HTML/CSS/JS/
+  config/chapter-manifest/ambience-manifest/icons) on install, with a
+  manual `CACHE_VERSION` string at the top that must be bumped whenever a
+  future session changes any of those precached files (there's no
+  automatic link to `config.json`'s version — that would require an async
+  fetch inside the install step, which was deliberately avoided for
+  simplicity). Chapters and ambience audio are cached lazily, on first
+  real use, by design — see the Session 23 CHANGELOG entry for the full
+  reasoning on the range-request handling that makes offline ambience
+  looping work.
+- `pwa.js` — service worker registration, the offline banner, the
+  "newer version ready" update banner (Refresh Now / Later — never
+  forced), and an optional "Install the Courtyard" row appended to the
+  Settings `.card` only once the browser confirms installability.
+- `index.html` gained manifest/icon/meta tags in `<head>` and one new
+  `<script src="pwa.js" defer>` tag — no existing tags were reordered or
+  removed.
+- `styles.css` gained one new block at the very end for the two banners —
+  everything above that block is byte-identical to before.
+
+**If a future session touches any precached file** (`index.html`,
+`styles.css`, `app.js`, `pwa.js`, `config.json`, `data/chapters.json`,
+`assets/audio/audio.json`, or anything in `assets/icons/`), bump
+`CACHE_VERSION` in `service-worker.js` in the same session, or people who
+already installed the app won't see the change until they happen to clear
+their cache. This has not yet been verified on a live deployment — see
+the Session 23 CHANGELOG entry for the manual verification steps a future
+session (or the person, once this is on GitHub Pages) should still run
+through.

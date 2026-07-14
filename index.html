@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+
+<!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
+     service-worker.js — neither touches routing, layout, or app.js. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#241811">
+<link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/icons/favicon-16.png" sizes="16x16" type="image/png">
+<meta name="mobile-web-app-capable" content="yes">
 </head>
 <body data-view="home">
 
@@ -296,6 +304,7 @@
 <footer>Come back whenever your heart needs a quiet place.</footer>
 
 <script src="app.js"></script>
+<script src="pwa.js" defer></script>
 
 </body>
 </html>
