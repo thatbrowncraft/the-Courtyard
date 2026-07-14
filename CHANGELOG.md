@@ -1075,3 +1075,86 @@ state attribute.
   standing recommendation applies: click into a chapter, open a verse,
   use Back/Forward across chapters and verses, and refresh mid-verse.
 - Everything else from Session 17 and README §7 is unchanged.
+
+## Session 19 — Reading journey indicator (new feature, additive only)
+
+### Scope
+One feature only: a thin progress line for the verse-list and verse-detail
+views, a "Chapter N • Verse X of Y" label, and a quiet chapter-completion
+reflection after a chapter's final verse. No redesign, no architecture
+changes, no touching of routing, lazy loading, data model, search, or
+existing styling beyond what this feature needed.
+
+### What was built
+- **Reading journey line**: a 2px gold line living at the bottom edge of
+  the sticky header (`#readingJourney`/`#readingJourneyFill`), visible only
+  in the verse-list and verse-detail views via a `body[data-view]` CSS
+  selector — invisible (opacity 0) everywhere else, never `display:none`,
+  so its width transition doesn't reset. Width is set from a real verse
+  position only — the verse being read in verse-detail, or the last-read
+  verse in that chapter (from existing `lastReading` storage) in the verse
+  list — never from scroll position.
+- **Chapter progress label**: `#readingProgressLabel`, showing
+  "Chapter N • Verse X of Y" in verse-detail view, driven by
+  `updateProgressLabel()`.
+- **Final-verse glow**: `pulseFinalGlow()` adds a stronger box-shadow class
+  for ~1s, then removes it — no confetti, no completion percentage.
+- **Chapter completion reflection**: `#chapterCompletion`, fading in ~1.05s
+  after the final verse (once the glow has settled), with a fixed
+  handwritten-style line, a "Continue to Chapter N+1" button (only shown
+  if that chapter exists in `CHAPTERS`, so it never hardcodes chapter
+  numbers or offers a chapter that hasn't been written yet) and a "Stay
+  Here a Little Longer" button that just dismisses it. The prompt is reset
+  on every route change (`toggleChapterCompletion(false)` at the top of
+  `goToRoute()`) so it never lingers into a different verse.
+
+### Why each file was touched
+- `index.html`: added the three new elements above
+  (`#readingJourney`/`#readingJourneyFill` inside the existing `<header>`,
+  `#readingProgressLabel` and `#chapterCompletion` inside the existing
+  `view-verse` section). No existing element removed or restructured.
+- `styles.css`: new rules only (`.reading-journey`, `.reading-journey-fill`,
+  `.reading-progress-label`, `.chapter-completion` and its children),
+  reusing the existing `--gold`/`--gold-bright`/`--line-soft` tokens and
+  the existing `.continue-btn`/`.continue-btn-primary` classes rather than
+  inventing new button styles. Nothing existing edited.
+- `app.js`: `goToRoute()`'s `verses` and `verse` branches now also call
+  the new helper functions after their existing render/showView calls;
+  the `verses` branch additionally captures `loadChapterVerses()`'s return
+  value (`const verses = ...`) instead of discarding it, since the verse
+  count is needed for the progress line — no other behavior in that branch
+  changed. Six new small, self-contained functions were added near
+  `renderVerseList()`: `updateReadingJourney()`, `pulseFinalGlow()`,
+  `updateProgressLabel()`, `toggleChapterCompletion()`,
+  `showChapterCompletion()`, plus the two new button click listeners.
+
+### What was verified
+- `node --check app.js` passes.
+- Grepped `index.html` for duplicate `id` attributes after the edit — none.
+- Confirmed the progress line only reacts to `updateReadingJourney()` calls
+  (fired from `goToRoute()` on real verse/chapter navigation), never to a
+  scroll or resize listener — no such listener was added anywhere.
+- Confirmed "next chapter" is always derived from `CHAPTERS.find(c => c.number
+  === chapterNumber + 1)`, so chapters 5 and 7–18 (still unwritten) will
+  correctly hide the "Continue" button until their JSON files exist and are
+  registered in `data/chapters.json` — no chapter numbers are hardcoded
+  anywhere in this feature.
+- Grepped every other `CHAPTERS` lookup in the file
+  (`loadChapterVerses()`, `prefetchNextChapter()`, both `goToRoute()`
+  branches, `paintChapterList()`, `renderContinueCard()`) and confirmed
+  they all key off the same `c.number` property from
+  `buildChaptersFromManifest()` — the completion prompt's lookup matches
+  that, not a leftover property from an earlier architecture.
+- Reduced motion: no new `requestAnimationFrame` loops were introduced —
+  the line's width, glow, and the completion prompt's fade all use plain
+  CSS `transition`s, which the existing global
+  `@media (prefers-reduced-motion: reduce)` rule in `styles.css` (line 82)
+  already collapses to ~0ms — no separate reduced-motion branch was needed.
+
+### Genuine limitations / what remains
+- Not confirmed in a live browser or the Android preview app (none
+  available here) — the standing recommendation applies: open a chapter's
+  verse list, step through to its final verse, confirm the glow pulse and
+  completion prompt appear, then confirm "Continue to Chapter N+1" is
+  hidden for chapters where the next one hasn't been written yet.
+- Everything else from Session 18 and README §7 is unchanged.

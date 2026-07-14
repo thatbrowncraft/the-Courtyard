@@ -805,14 +805,16 @@
   async function goToRoute(route, opts){
     opts = opts || {};
     const isRestore = !!opts.isRestore;
+    toggleChapterCompletion(false); // every route change starts clean; the verse branch re-shows it only when it applies
 
     if(route.view === 'verses'){
       const ch = CHAPTERS.find(c => c.number === route.chapter);
       if(!ch){ setRoute({ view: 'home' }, { replace: true }); return; }
       currentChapterNumber = route.chapter;
-      await loadChapterVerses(route.chapter);
+      const verses = await loadChapterVerses(route.chapter);
       renderVerseList(ch);
       showView('verses');
+      updateReadingJourney(route.chapter, verses.length);
       prefetchNextChapter(route.chapter);
       return;
     }
@@ -826,6 +828,13 @@
       currentChapterNumber = route.chapter;
       renderVerseDetail(v);
       showView('verse');
+      updateReadingJourney(route.chapter, verses.length, route.verse);
+      updateProgressLabel(route.chapter, route.verse, verses.length);
+      const isFinalVerse = verses.length > 0 && route.verse === verses.length;
+      if(isFinalVerse){
+        pulseFinalGlow();
+        setTimeout(()=> showChapterCompletion(route.chapter), 1050);
+      }
       if(!isRestore){
         const visited = Storage.get('versesVisited', 0);
         Storage.set('versesVisited', visited + 1);
@@ -928,6 +937,84 @@
     if(!needsLoad.length) return;
     Promise.all(needsLoad.map(ch => loadChapterVerses(ch.number))).then(paintChapterList);
   }
+
+  /* ---------------- reading journey indicator ----------------
+     A thin line living at the sticky header's bottom edge (see #readingJourney
+     in index.html/styles.css), visible only while viewing a chapter's verse
+     list or an individual verse. Its width always comes from a known verse
+     position — the verse actually being read, or (in the verse list) the
+     last-read verse in that chapter — never from scroll position, and it
+     only moves when goToRoute() is driven by real navigation between verses. */
+  function updateReadingJourney(chapterNumber, totalVerses, verseNumber){
+    const fill = document.getElementById('readingJourneyFill');
+    if(!fill) return;
+    let progressVerse = verseNumber;
+    if(progressVerse == null){
+      const last = Storage.get('lastReading', null);
+      progressVerse = (last && last.chapter === chapterNumber) ? last.verse : 0;
+    }
+    const pct = totalVerses > 0 ? Math.min(100, Math.max(0, (progressVerse / totalVerses) * 100)) : 0;
+    fill.style.width = pct.toFixed(2) + '%';
+  }
+
+  // A brief, quiet brightening of the journey line on reaching a chapter's
+  // final verse, then it fades back to its normal glow after about a second —
+  // no badge, no percentage, no celebration.
+  function pulseFinalGlow(){
+    const fill = document.getElementById('readingJourneyFill');
+    if(!fill) return;
+    fill.classList.add('at-final');
+    setTimeout(()=> fill.classList.remove('at-final'), 1000);
+  }
+
+  function updateProgressLabel(chapterNumber, verseNumber, totalVerses){
+    const label = document.getElementById('readingProgressLabel');
+    if(!label) return;
+    label.textContent = totalVerses > 0 ? `Chapter ${chapterNumber} • Verse ${verseNumber} of ${totalVerses}` : '';
+  }
+
+  /* ---------------- chapter completion reflection ----------------
+     Shown a moment after the final verse of a chapter is reached — never
+     tied to a hardcoded chapter number, since "next chapter" is simply
+     whichever chapter number follows in CHAPTERS. */
+  const CHAPTER_COMPLETION_LINE = "Take a moment before beginning the next chapter.";
+
+  function toggleChapterCompletion(show){
+    const el = document.getElementById('chapterCompletion');
+    if(!el) return;
+    el.classList.toggle('visible', show);
+    if(!show) el.hidden = true;
+  }
+
+  function showChapterCompletion(chapterNumber){
+    // guard against a stale timer firing after the person has already moved on
+    if(currentChapterNumber !== chapterNumber || document.body.dataset.view !== 'verse') return;
+    const el = document.getElementById('chapterCompletion');
+    const textEl = document.getElementById('chapterCompletionText');
+    const nextBtn = document.getElementById('continueNextChapterBtn');
+    if(!el || !textEl || !nextBtn) return;
+    textEl.textContent = CHAPTER_COMPLETION_LINE;
+    const nextChapter = CHAPTERS.find(c => c.number === chapterNumber + 1);
+    if(nextChapter){
+      nextBtn.textContent = `Continue to Chapter ${chapterNumber + 1}`;
+      nextBtn.style.display = '';
+      nextBtn.dataset.nextChapter = String(chapterNumber + 1);
+    } else {
+      nextBtn.style.display = 'none'; // nothing written yet to continue into
+    }
+    el.hidden = false;
+    requestAnimationFrame(()=> el.classList.add('visible'));
+  }
+
+  document.getElementById('continueNextChapterBtn')?.addEventListener('click', (e)=>{
+    const next = Number(e.currentTarget.dataset.nextChapter);
+    if(!next) return;
+    toggleChapterCompletion(false);
+    setRoute({ view: 'verses', chapter: next });
+  });
+  document.getElementById('stayHereBtn')?.addEventListener('click', ()=>{
+    toggleChapterCompletion(false);
+  });
 
   function renderVerseList(ch){
     document.getElementById('verseListTitle').textContent = ch.title;

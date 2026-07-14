@@ -111,6 +111,9 @@
     <button data-view="stats">Journey</button>
     <button data-view="settings">Settings</button>
   </nav>
+  <div id="readingJourney" class="reading-journey" aria-hidden="true">
+    <div id="readingJourneyFill" class="reading-journey-fill"></div>
+  </div>
 </header>
 
 <main>
@@ -170,7 +173,15 @@
   <section class="view" id="view-verse">
     <div class="section-shell">
       <button id="backToVerses" class="back-link">&larr; back to verses</button>
+      <p class="reading-progress-label" id="readingProgressLabel"></p>
       <div id="verseDetail"></div>
+      <div id="chapterCompletion" class="chapter-completion" hidden>
+        <p class="chapter-completion-text" id="chapterCompletionText"></p>
+        <div class="chapter-completion-actions">
+          <button id="continueNextChapterBtn" class="continue-btn continue-btn-primary"></button>
+          <button id="stayHereBtn" class="continue-btn">Stay Here a Little Longer</button>
+        </div>
+      </div>
     </div>
   </section>
 

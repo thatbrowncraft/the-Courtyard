@@ -517,6 +517,53 @@
   .continue-btn-primary{ color:var(--gold-bright); border-color:var(--gold-soft); }
   .continue-btn-primary:hover, .continue-btn-primary:focus-visible{ background:rgba(192,138,62,0.09); border-color:var(--gold); }
 
+  /* ---------- reading journey indicator ----------
+     A thin line living at the sticky header's bottom edge, so it stays fixed
+     near the top without any new positioning of its own. Only visible while
+     viewing a chapter's verse list or an individual verse — everywhere else
+     it's present but invisible (opacity, not display:none, so its width
+     transition never has to restart from zero on the next chapter/verse view). */
+  .reading-journey{
+    position:absolute; left:0; right:0; bottom:-1px; height:2px;
+    background:var(--line-soft);
+    opacity:0; pointer-events:none;
+    transition:opacity 0.4s var(--ease);
+  }
+  body[data-view="verses"] .reading-journey,
+  body[data-view="verse"] .reading-journey{ opacity:1; }
+  .reading-journey-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--gold), var(--gold-bright));
+    box-shadow:0 0 5px 0.5px rgba(224,174,100,0.4);
+    transition:width 0.3s var(--ease), box-shadow 0.6s ease;
+  }
+  .reading-journey-fill.at-final{
+    box-shadow:0 0 11px 1.5px rgba(224,174,100,0.75);
+  }
+
+  .reading-progress-label{
+    text-align:center; color:var(--gold); opacity:0.75;
+    font-size:0.74rem; letter-spacing:0.1em; text-transform:uppercase;
+    margin:-6px 0 20px;
+  }
+
+  /* ---------- chapter completion reflection ----------
+     Appears only after the final verse of a chapter, and only once the
+     journey line's brief glow has already settled back down. Handwritten
+     in tone rather than a checklist — no percentages, no celebration. */
+  .chapter-completion{
+    max-width:520px; margin:48px auto 0; padding-top:36px; text-align:center;
+    border-top:1px solid var(--line-soft);
+    opacity:0; transform:translateY(6px);
+    transition:opacity 1.1s var(--ease), transform 1.1s var(--ease);
+  }
+  .chapter-completion.visible{ opacity:1; transform:translateY(0); }
+  .chapter-completion-text{
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-size:1.15rem; color:var(--ivory-dim); margin:0 0 22px;
+  }
+  .chapter-completion-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
   /* ---------- generic section shell ---------- */
   .section-shell{ max-width:840px; margin:0 auto; padding:56px 24px 90px; }
   .section-shell h2{ font-size:1.7rem; font-style:italic; font-weight:500; margin-bottom:8px; }
