@@ -18,5 +18,21 @@
   {
     "name": "Soothing Flute",
     "file": "Soothing flute.mp3"
+  },
+  {
+    "name": "Hanuman Chalisa",
+    "file": "Hanuman chalisa.mp3"
+  },
+  {
+    "name": "Hare Rama Hare Krishna",
+    "file": "Hare rama hare krishna.mp3"
+  },
+  {
+    "name": "Mahabharat Tune",
+    "file": "Mahabharat tune.mp3"
+  },
+  {
+    "name": "Om",
+    "file": "Om.mp3"
   }
 ]
