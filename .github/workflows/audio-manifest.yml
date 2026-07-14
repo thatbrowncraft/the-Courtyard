@@ -1,0 +1,83 @@
+name: Regenerate ambience audio manifest
+
+# ---------------------------------------------------------------------------
+# Plain-language summary (you never need to understand YAML to use this):
+#
+# This workflow watches the assets/audio folder. Any time you add a new
+# MP3, delete one, rename one, or change anything else in that folder and
+# commit it — including uploading a file straight through GitHub's website —
+# this runs automatically and:
+#   1. Re-scans assets/audio/ for .mp3 files
+#   2. Rebuilds assets/audio/audio.json to match exactly what's there
+#      (using the same generate_audio_manifest.py from Session 21)
+#   3. Commits that updated audio.json back to the repository, if it changed
+#
+# Your desired workflow is now exactly:
+#   Upload MP3 → Commit → (this runs automatically) → GitHub Pages deploys
+#   → new ambience appears
+#
+# You never run generate_audio_manifest.py yourself, and never touch any
+# code. Uploading a file through GitHub's "Add file" button and clicking
+# "Commit changes" is enough.
+#
+# A note on GitHub Pages: this workflow only regenerates and commits
+# audio.json. It does not deploy anything itself. Once this workflow's
+# commit lands on your default branch, GitHub Pages redeploys the same way
+# it already does for any other commit (whether your Pages site is set to
+# deploy from a branch, or has its own separate Pages workflow) — nothing
+# about your existing deployment setup needs to change.
+# ---------------------------------------------------------------------------
+
+on:
+  push:
+    # Change "main" below if your repository's default branch has a
+    # different name (for example "master"). You can check this on your
+    # repository's GitHub page — the branch shown in the branch dropdown
+    # by default is the one to use here.
+    branches:
+      - main
+    paths:
+      - 'assets/audio/**'
+
+# Grants this workflow permission to push its own commit back to the repo.
+# Without this, the "commit and push" step below would fail.
+permissions:
+  contents: write
+
+jobs:
+  regenerate-manifest:
+    runs-on: ubuntu-latest
+
+    # Safety valve, not something you need to think about day to day:
+    # the commit this workflow makes (updating audio.json, a file inside
+    # assets/audio/) would otherwise match the "paths" trigger above and
+    # re-run this same workflow, forever. Skipping any run whose commit
+    # was made by this workflow's own bot account breaks that loop.
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          # generate_audio_manifest.py uses only Python's standard library —
+          # no extra install step is needed here.
+
+      - name: Regenerate assets/audio/audio.json
+        run: python3 assets/audio/generate_audio_manifest.py
+
+      - name: Commit and push audio.json if it changed
+        # This action quietly does nothing if the script produced no
+        # changes (e.g. a commit that touched assets/audio/ in some other
+        # way but didn't actually add/remove/rename an MP3), and commits +
+        # pushes only assets/audio/audio.json otherwise.
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto-update assets/audio/audio.json"
+          file_pattern: assets/audio/audio.json
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
