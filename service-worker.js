@@ -18,7 +18,7 @@
   would go against "avoid unnecessary downloads." An ambience file is only
   ever re-fetched if its filename changes, or if someone clears site data.
 */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 
 const PRECACHE = `courtyard-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `courtyard-data-${CACHE_VERSION}`;
@@ -119,6 +119,25 @@ async function cacheFirst(request, cacheName) {
   }
 }
 
+// Network-first: always attempt a fresh fetch (bypassing the HTTP cache so a
+// deploy is picked up immediately, not just on the browser's own revalidation
+// schedule) and update the cache with whatever comes back. Only falls back to
+// the last cached copy if the network is unavailable, so offline support is
+// unchanged — this just stops a stale response from being served while online.
+async function networkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const freshRequest = new Request(request, { cache: 'no-cache' });
+    const response = await fetch(freshRequest);
+    if (response && response.ok) cache.put(request, response.clone());
+    return response;
+  } catch (e) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw e;
+  }
+}
+
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
 }
@@ -131,9 +150,15 @@ function isAppDataRequest(url) {
   if (!isSameOrigin(url)) return false;
   return (
     url.pathname.includes('/data/') ||
-    /\/config\.json$/.test(url.pathname) ||
-    /\/assets\/audio\/audio\.json$/.test(url.pathname)
+    /\/config\.json$/.test(url.pathname)
   );
+}
+
+// The ambience manifest changes whenever ambiences are added/removed, so
+// unlike other app data it must never be served stale from cache without
+// at least trying the network first — see networkFirst() below.
+function isAmbienceManifestRequest(url) {
+  return isSameOrigin(url) && /\/assets\/audio\/audio\.json$/.test(url.pathname);
 }
 
 function isAmbienceAudioRequest(url) {
@@ -241,6 +266,11 @@ self.addEventListener('fetch', (event) => {
 
   if (isGoogleFontRequest(url)) {
     event.respondWith(cacheFirst(request, FONT_CACHE));
+    return;
+  }
+
+  if (isAmbienceManifestRequest(url)) {
+    event.respondWith(networkFirst(request, DATA_CACHE));
     return;
   }
 
