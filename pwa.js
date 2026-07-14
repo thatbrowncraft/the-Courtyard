@@ -136,8 +136,12 @@
 
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('service-worker.js')
-      .then((registration) => {
+      navigator.serviceWorker
+  .register('service-worker.js', {
+    updateViaCache: 'none'
+  })
+  .then((registration) => {
+    registration.update();
         if (registration.waiting && navigator.serviceWorker.controller) {
           showUpdateBanner(registration);
         }
