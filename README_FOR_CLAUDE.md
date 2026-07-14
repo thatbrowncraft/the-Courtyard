@@ -40,6 +40,17 @@ of default values from `config.json` instead of literals. See
 
 ```
 kanha-jis-courtyard/
+  .github/
+    workflows/
+      audio-manifest.yml    — GitHub Actions workflow (Session 22): runs
+                              generate_audio_manifest.py automatically on
+                              every push that touches assets/audio/, and
+                              commits the updated audio.json back to the
+                              repo. This is what removed the last manual
+                              step — nobody needs to run Python by hand
+                              anymore. See §7 below for the loop-prevention
+                              note and the one setting (branch name) that
+                              may need adjusting for a given repository.
   index.html              — structure only: HTML + <link>/<script> tags. No inline CSS or JS.
   styles.css              — all CSS, in the original cascade order (variables → layout →
                             components → animations → arrival ritual → responsive, etc.)
@@ -51,11 +62,22 @@ kanha-jis-courtyard/
     chapter-01.json         — all 47 real verses for Chapter 1, full schema (see §4)
     chapter-NN.json         — (future) one file per chapter that has real content
   assets/
-    audio/                 — temple.mp3, bansuri.mp3, river.mp3, banyan.mp3, village.mp3
-                              (Session 20). The app only ever references these five
-                              filenames; replacing a file's contents (same name) is all
-                              that's needed to change what plays — no code change required.
-    icons/, images/        — currently empty (see their own README.md for why)
+    audio/
+      audio.json             — single source of truth for the ambience menu (Session 21):
+                                an ordered array of { name, file }. The app builds its
+                                ambience buttons from this file — no button markup lives
+                                in index.html or app.js anymore. As of Session 22 this file
+                                is regenerated automatically by the GitHub Actions workflow
+                                above; it should no longer need manual edits at all.
+      generate_audio_manifest.py — dependency-free Python 3 helper that regenerates
+                                audio.json from whatever .mp3 files are actually in this
+                                folder. As of Session 22, GitHub Actions runs this
+                                automatically on every push to assets/audio/ — running it
+                                by hand is now only a fallback for testing locally, not
+                                part of the normal workflow.
+      temple.mp3, bansuri.mp3, river.mp3, banyan.mp3, village.mp3 — the five ambience
+                                audio files themselves (Session 20's local-audio move).
+    icons/, images/            — currently empty (see their own README.md for why)
   README_FOR_CLAUDE.md     — this file
   CHANGELOG.md             — session-by-session history
 ```
@@ -260,16 +282,29 @@ despair, without turning clinical.
 - `emotions`, `keywords`, `related` fields exist in Chapter 1 data but are
   unused by any template — mood-matching from the home screen, real search,
   and cross-referencing are all still open.
-- **Ambience audio (Session 20)**: `AMBIENCE_SOURCES` in `app.js` now points
-  at local files in `assets/audio/` (`temple.mp3`, `bansuri.mp3`, `river.mp3`,
-  `banyan.mp3`, `village.mp3`) instead of remote Freesound URLs. Whether
-  actual audio files exist at those paths in the deployed project has not
-  been verified this session — no filesystem access to the live
-  `assets/audio/` folder was available. If a file is missing, playback
-  fails silently via the existing `error` → `ambience-error` handling and
-  the UI drops back to "Silent Courtyard"; nothing else breaks. Drop the
-  five MP3s into `assets/audio/` (or replace any of them later) with no
-  code changes needed — the filenames above are the only contract.
+- **Ambience audio (Sessions 20–22)**: `assets/audio/audio.json` is the
+  single source of truth for the ambience menu, the same pattern as
+  `data/chapters.json` for chapters — an ordered array of
+  `{ name, file }`. `app.js` fetches it at startup and builds
+  `AMBIENCE_SOURCES` and the sound-panel buttons entirely from it; there
+  is no hardcoded ambience list in `index.html` or `app.js`. As of
+  Session 22, regenerating `audio.json` is fully automatic: a GitHub
+  Actions workflow (`.github/workflows/audio-manifest.yml`) runs
+  `generate_audio_manifest.py` on every push that touches
+  `assets/audio/` and commits the updated manifest back to the repo. The
+  person's workflow is now: upload an MP3 (even directly through
+  GitHub's website), commit — the manifest updates and Pages redeploys
+  on its own. No Python, no JavaScript, no manual script-running.
+  Two things worth checking once a real repository is available: (1) the
+  workflow assumes the default branch is named `main` — if it's
+  something else, that's a one-line change in the YAML, called out in a
+  comment there; (2) the repository's Settings → Actions → General →
+  Workflow permissions must allow "Read and write permissions" for the
+  workflow's commit-back step to succeed. Whether actual MP3 files exist
+  in `assets/audio/` has still not been verified — no filesystem access
+  to a live repository was available in any of these sessions. If a file
+  is missing, playback fails silently via the existing `error` →
+  `ambience-error` handling; nothing else breaks.
 - **The Session 15 "Continue your journey" card on Home now has a proper
   `.continue-card` rule in `styles.css`** (added Session 16, once that file
   was available) — no more inline styles except the `display:none` toggle,

@@ -1269,3 +1269,242 @@ changed.
   fades out fully before stopping, refresh the page and confirm the last
   ambience shows as selected without auto-playing, and test with one MP3
   deliberately renamed/removed to confirm the graceful-failure path.
+
+## Session 21 — Manifest-driven ambience architecture (no more hardcoded buttons)
+
+### Scope
+Architecture-only change to how the ambience menu is built. Nothing about
+playback behavior, timing, or the visible panel design changed. Routing,
+lazy loading, chapter loading, search, collections, reading progress,
+verse/chapter rendering, and JSON architecture for Gita content were not
+touched. `styles.css` was not touched at all this session.
+
+### What changed
+- **`assets/audio/audio.json` is now the single source of truth for the
+  ambience menu** — the same pattern Session 13 already established for
+  chapters (`data/chapters.json`). It's an ordered array of
+  `{ "name": "...", "file": "....mp3" }` entries. Seeded this session with
+  the five existing ambiences (Temple Courtyard, Krishna's Flute, Yamuna
+  River, Banyan Breeze, Village Evening) in their current order.
+- **`app.js`**:
+  - `AMBIENCE_SOURCES` is no longer a hand-written object. It's built at
+    startup by `buildAmbienceSources()` from a fetched `AMBIENCE_LIST`
+    (mirrors `buildChaptersFromManifest()` / `CHAPTER_FILES` exactly).
+    `loadContent()` now also fetches `assets/audio/audio.json`, the same
+    way it already fetched `config.json` and `data/chapters.json`; if the
+    fetch fails, a fallback `AMBIENCE_LIST` (the same five entries)
+    keeps the app working exactly as before.
+  - Each ambience's internal key is derived from its filename minus
+    extension (`temple.mp3` → `temple`, `bansuri.mp3` → `bansuri`) via
+    `ambienceKeyFromFile()`. This key is what's stored under
+    `localStorage`'s `lastAmbience` and used as each button's
+    `data-sound` value — nothing here is hardcoded to a specific
+    ambience name anymore.
+  - `renderAmbienceButtons()` is new: it builds one `<button>` per
+    manifest entry and inserts it directly into `#soundPanel` (as a
+    sibling of a new invisible `#ambienceAnchor` marker, before "Silent
+    Courtyard"). Buttons are plain, unstyled-by-JS elements with the same
+    tag/attributes the old hardcoded markup used, so the existing CSS
+    (which already targets `#soundPanel button` generically) applies with
+    zero changes.
+  - The button-click wiring, Silent Courtyard handler, volume slider
+    setup, and the `ambience-error` listener — previously top-level code
+    that ran once at script parse time against static HTML — are now
+    inside `initAmbienceUI()`, called from `init()` right after
+    `loadContent()` resolves and `renderAmbienceButtons()` has run. This
+    was the one behavioral reordering required: ambience setup now waits
+    for the manifest fetch, the same way chapter rendering already waits
+    for its own data.
+  - `setActiveAmbienceUI()` is unchanged — it already queried
+    `#soundPanel [data-sound]` generically rather than naming specific
+    buttons, so it needed no edits at all.
+  - Added one small safety check: if `lastAmbience` in storage refers to
+    a key that no longer exists in the current manifest (e.g. that MP3
+    was removed from `audio.json` since the last visit), the UI quietly
+    falls back to "Silent Courtyard" instead of showing a selected state
+    for a button that no longer exists.
+- **`index.html`**: the five hardcoded `<button data-sound="...">`
+  elements are gone. In their place is a single empty, `display:none`
+  `<span id="ambienceAnchor">` that JS uses purely as an insertion point.
+  `#soundOff` and the volume row are untouched — Silent Courtyard stays a
+  fixed control, not a manifest entry, since it means "stop playback,"
+  not "play this file."
+- **`assets/audio/generate_audio_manifest.py`**: a new, dependency-free
+  Python 3 helper (uses only the standard library) that regenerates
+  `audio.json` from whatever `.mp3` files actually sit in
+  `assets/audio/`. Run it after adding or removing an MP3, before
+  committing. See "Automatic manifest" below for exactly what it does and
+  why it can't run itself.
+
+### Automatic manifest — what's actually possible on GitHub Pages
+GitHub Pages serves static files with no server-side code execution —
+there's no way for anything to "notice" a new upload and react on its
+own, the way a real backend with a file-watcher could. Something has to
+actually run and produce a new `audio.json` before a commit. The
+`generate_audio_manifest.py` script is the simplest version of that:
+run it locally, right before committing. It:
+- scans `assets/audio/` for `.mp3` files,
+- keeps the existing display name for every file already in
+  `audio.json` (so "Krishna's Flute" never gets silently renamed),
+- adds any newly-found `.mp3` with a guessed title-cased name from its
+  filename (e.g. `govindam_adi_purusham.mp3` → "Govindam Adi Purusham")
+  — the ambience appears in the app immediately either way; the guessed
+  name is just a starting point you can hand-edit in `audio.json` if you
+  want something more polished,
+- drops any manifest entry whose file no longer exists in the folder,
+- writes the result back to `audio.json`.
+
+New workflow: drop MP3 into `assets/audio/` → run
+`python3 assets/audio/generate_audio_manifest.py` → commit → deploy →
+new ambience appears. No JavaScript is ever touched.
+
+### Why each file was necessary
+- `app.js`: the only file that could hold `AMBIENCE_SOURCES`,
+  `AMBIENCE_LIST`, the manifest fetch, and the button-rendering/wiring
+  logic.
+- `index.html`: the five hardcoded ambience buttons had to be removed and
+  replaced with a single anchor element, since the whole point is that no
+  button markup lives in HTML anymore either — it's generated from data,
+  same as chapters are.
+- `assets/audio/audio.json`: the new manifest itself — this is the file
+  the person will eventually stop hand-editing entirely, since the helper
+  script maintains it.
+- `assets/audio/generate_audio_manifest.py`: the requested helper —
+  new file, doesn't touch anything else in the project.
+- `styles.css`: not modified. The new buttons are direct children of
+  `#soundPanel`, exactly like the old hardcoded ones, so every existing
+  selector (`#soundPanel button`, `#soundPanel button.active`,
+  `#soundPanel.switching button[data-sound]`, etc.) matches them
+  unchanged.
+
+### What was verified
+- `node --check app.js` passes.
+- Ran `generate_audio_manifest.py` three times against a scratch copy of
+  `assets/audio/`: once against the five seed files (no-op, confirmed
+  unchanged output), once after adding two new `.mp3` files with
+  underscore/hyphen names (confirmed both appeared with sensible guessed
+  names, existing five untouched), and once after removing a file
+  (confirmed it dropped from the manifest). Output was valid JSON in all
+  three cases (`json.load` round-trip checked).
+- Grepped `index.html` for `data-sound` — zero hardcoded occurrences
+  remain; confirmed the only ambience-related markup left is
+  `#ambienceAnchor`, `#soundOff`, and the volume row.
+- Grepped `app.js` for every reference to `AMBIENCE_SOURCES` to confirm
+  none of it assumes a fixed key set (temple/flute/river/etc.) anymore —
+  all lookups are by whatever key the manifest produced.
+- Confirmed `initAmbienceUI()` runs after `loadContent()` in `init()`,
+  so button click listeners are always attached to buttons that already
+  exist, never racing the fetch.
+
+### Genuine limitations / what remains
+- **No live browser test was possible in this environment.** The
+  reordering of ambience setup to run after `init()`'s `loadContent()`
+  should be functionally identical to before, but a real smoke test
+  (open the sound panel, confirm all five ambiences appear and play,
+  confirm the panel toggle/animation still looks the same) hasn't been
+  done in an actual browser.
+- **The five real MP3 files were still not sourced or placed in
+  `assets/audio/` this session** — same limitation as Session 20. This
+  session only made the menu itself dynamic; it doesn't change whether
+  the audio files exist.
+- Recommended before trusting this fully: run
+  `generate_audio_manifest.py` against the real `assets/audio/` folder
+  once actual MP3s are in place, confirm `audio.json` looks right, then
+  open the app and confirm the ambience panel lists exactly those files
+  in the right order with the right names.
+
+## Session 22 — Fully automatic manifest via GitHub Actions
+
+### Scope
+Removed the one remaining manual step from Session 21 (running
+`generate_audio_manifest.py` by hand). No application code was changed —
+no UI, routing, lazy loading, or any other existing behavior was touched.
+This session added exactly one new file: a GitHub Actions workflow.
+
+### What changed
+- **New file: `.github/workflows/audio-manifest.yml`** — a GitHub Actions
+  workflow that:
+  1. Triggers on any push to the default branch that touches anything
+     under `assets/audio/` (adding, deleting, renaming, or otherwise
+     changing a file there — including an MP3 uploaded and committed
+     directly through GitHub's website, no local machine needed).
+  2. Checks out the repository and sets up Python 3 (no extra
+     dependencies to install — `generate_audio_manifest.py` only uses
+     the standard library, unchanged from Session 21).
+  3. Runs `python3 assets/audio/generate_audio_manifest.py`, the exact
+     same script from last session, just executed by GitHub instead of
+     by hand.
+  4. Commits `assets/audio/audio.json` back to the repository — but only
+     if it actually changed — using the widely-used
+     `stefanzweifel/git-auto-commit-action`.
+  5. Does *not* handle deployment itself. Once its commit lands on the
+     branch, GitHub Pages redeploys exactly the way it already does for
+     any other commit — nothing about the person's existing Pages setup
+     needed to change for this to work.
+
+  The desired workflow is now exactly:
+  **Upload MP3 → Commit → GitHub Action regenerates `audio.json` →
+  GitHub Pages deploys → new ambience appears** — with no Python, no
+  JavaScript, and no manual script-running required at any point.
+
+- **Loop-prevention safeguard**: the workflow's own commit updates a file
+  inside `assets/audio/`, which would otherwise match its own trigger and
+  re-run itself indefinitely. The job has a guard,
+  `if: github.actor != 'github-actions[bot]'`, that skips any run whose
+  triggering commit was authored by the workflow's own bot account,
+  breaking that loop. This is the only non-obvious part of the workflow
+  and is documented inline in the YAML itself.
+
+### Why this file was necessary (and no others were touched)
+- `.github/workflows/audio-manifest.yml` is the only file GitHub Actions
+  workflows can live in — this location is a GitHub convention, not a
+  choice made for this project.
+- `generate_audio_manifest.py` (Session 21) needed no changes — the
+  workflow just calls it exactly as a person would from the command line.
+- `app.js`, `index.html`, `styles.css`: untouched. This session is pure
+  CI/CD automation sitting *above* the existing manifest-driven
+  architecture, not a change to how the app itself reads `audio.json`.
+
+### A note on branch name and repository settings
+- The workflow triggers on pushes to `main`. If the project's default
+  branch is named something else (e.g. `master`), that one line in the
+  YAML (`branches: [main]`) needs to be updated to match — this is a
+  one-word edit in a YAML file, not application code, and is called out
+  in a comment directly above it in the workflow file.
+- For the workflow's commit-and-push step to succeed, the repository's
+  **Settings → Actions → General → Workflow permissions** must allow
+  "Read and write permissions" (or at minimum not be restricted below
+  what the `permissions: contents: write` block in the workflow
+  requests). Most repositories allow this by default; if the push step
+  fails with a permissions error, this setting is the first thing to
+  check.
+
+### What was verified
+- The workflow YAML was parsed with Python's `yaml.safe_load()` and
+  confirmed to be syntactically valid.
+- Re-read `generate_audio_manifest.py` to confirm it still requires no
+  dependencies beyond the standard library (so the workflow's Python
+  setup step needs no `pip install` step) and still writes only to
+  `assets/audio/audio.json`, matching what the workflow's commit step
+  targets (`file_pattern: assets/audio/audio.json`).
+
+### Genuine limitations / what remains
+- **This has not been run inside an actual GitHub Actions environment** —
+  there was no live GitHub repository available to push to and observe a
+  real workflow run in this session. The YAML's structure and the
+  actions it references (`actions/checkout@v4`, `actions/setup-python@v5`,
+  `stefanzweifel/git-auto-commit-action@v5`) are all real, current,
+  widely-used actions, but a first real run should be watched under the
+  repository's "Actions" tab to confirm: the workflow triggers on an MP3
+  upload, `audio.json` updates correctly, the commit appears attributed
+  to `github-actions[bot]`, and — importantly — that second commit does
+  *not* trigger another workflow run (confirming the loop-prevention
+  guard works as intended).
+- If the project's Pages deployment is configured as its own separate
+  GitHub Actions workflow (rather than the classic "deploy from a
+  branch" setting), confirm that workflow's own trigger includes pushes
+  to the branch this one commits to — it almost certainly already does
+  if it deploys on every push to `main`, but this wasn't something that
+  could be inspected directly in this session.
+- The default branch name (assumed `main` above) was not confirmed
+  against the actual repository, since none was available to check.

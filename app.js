@@ -106,6 +106,13 @@
     }catch(e){ /* keep fallback CHAPTER_FILES */ }
 
     buildChaptersFromManifest(CHAPTER_FILES);
+
+    try{
+      const ambienceManifest = await fetchJSON('assets/audio/audio.json');
+      if(Array.isArray(ambienceManifest) && ambienceManifest.length) AMBIENCE_LIST = ambienceManifest;
+    }catch(e){ /* keep fallback AMBIENCE_LIST */ }
+
+    buildAmbienceSources(AMBIENCE_LIST);
   }
 
   function getVersesForChapter(chapterNumber){
@@ -1259,23 +1266,47 @@
   });
 
   /* ---------------- ambient sound: modular local MP3 ambience, never autoplay ----------------
-     Five ambience options, each backed by a local file under assets/audio/. Files are
-     lazy: nothing is fetched until a person actually picks an ambience, and only one
-     ever plays at once. Switching crossfades over ~2 seconds; volume ramps smoothly.
+     Ambience options are entirely data-driven, the same pattern as chapters:
+     assets/audio/audio.json is the single source of truth — an ordered array of
+     { name, file } entries. AMBIENCE_SOURCES below is never hand-edited; it's
+     rebuilt from that manifest by buildAmbienceSources() inside loadContent().
+     Adding, renaming, or removing an ambience never requires touching this file —
+     add/remove the MP3 under assets/audio/ and list it (or don't) in audio.json.
+     "Silent Courtyard" is the one exception: it's a fixed control (stop playback),
+     not an ambience file, so it stays as a static button in index.html.
 
-     To swap or add ambience audio: replace the MP3 at the given path (same filename)
-     or point AMBIENCE_SOURCES at a new one. No JavaScript changes are required to
-     swap ambience — the app only ever references these filenames. If a file is
-     missing or fails to load, the audio element's error event fires and the app
-     fails quietly back to "Silent Courtyard" (see handleError below) rather than
-     breaking anything. */
-  const AMBIENCE_SOURCES = {
-    temple: { url: 'assets/audio/temple.mp3' },
-    flute:  { url: 'assets/audio/bansuri.mp3' },
-    river:  { url: 'assets/audio/river.mp3' },
-    banyan: { url: 'assets/audio/banyan.mp3' },
-    village:{ url: 'assets/audio/village.mp3' }
-  };
+     Files are lazy: nothing is fetched until a person actually picks an ambience,
+     and only one ever plays at once. Switching crossfades over ~2 seconds; volume
+     ramps smoothly. If a file is missing or fails to load, the audio element's
+     error event fires and the app fails quietly back to "Silent Courtyard" (see
+     handleError below) rather than breaking anything. */
+  // Fallback manifest used only if assets/audio/audio.json can't be fetched
+  // (e.g. opened without a local server, or the file doesn't exist yet) —
+  // same shape either way: an ordered array of { name, file }.
+  let AMBIENCE_LIST = [
+    { name: 'Temple Courtyard', file: 'temple.mp3' },
+    { name: "Krishna's Flute", file: 'bansuri.mp3' },
+    { name: 'Yamuna River', file: 'river.mp3' },
+    { name: 'Banyan Breeze', file: 'banyan.mp3' },
+    { name: 'Village Evening', file: 'village.mp3' }
+  ];
+  // Built from AMBIENCE_LIST by buildAmbienceSources(); keyed by filename minus
+  // extension (e.g. "temple.mp3" -> "temple"), which also becomes each button's
+  // data-sound value and the value stored under the "lastAmbience" key.
+  let AMBIENCE_SOURCES = {};
+  function ambienceKeyFromFile(file){
+    return String(file).replace(/\.[^/.]+$/, '');
+  }
+  function buildAmbienceSources(list){
+    const sources = {};
+    (Array.isArray(list) ? list : []).forEach(entry=>{
+      if(!entry || !entry.file) return;
+      const key = ambienceKeyFromFile(entry.file);
+      if(!key) return;
+      sources[key] = { url: `assets/audio/${entry.file}`, name: entry.name || key };
+    });
+    AMBIENCE_SOURCES = sources;
+  }
   const CROSSFADE_MS = 2000;
   const LOOP_XFADE_MS = 700; // a short self-crossfade just before each clip's natural end,
                               // so looping is a seam you can't hear rather than a hard restart/pop
@@ -1408,40 +1439,80 @@
     });
     document.getElementById('soundOff').setAttribute('aria-pressed', String(!type));
   }
-  const lastAmbience = Storage.get('lastAmbience', CONFIG.defaultAmbience);
-  if(lastAmbience) setActiveAmbienceUI(lastAmbience);
 
-  soundToggle.addEventListener('click', ()=>{
-    const expanded = soundToggle.getAttribute('aria-expanded') === 'true';
-    soundToggle.setAttribute('aria-expanded', String(!expanded));
-    soundPanel.classList.toggle('open', !expanded);
-  });
-  document.querySelectorAll('#soundPanel [data-sound]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const type = btn.dataset.sound;
-      if(SoundScape.isSwitching() || type === SoundScape.current()) return;
-      setActiveAmbienceUI(type);
-      Storage.set('lastAmbience', type);
-      SoundScape.play(type);
+  /* Builds one button per manifest entry, inserted directly into #soundPanel
+     (as siblings of the hidden #ambienceAnchor marker, before "Silent
+     Courtyard") — not nested inside a wrapper div. #soundPanel is a plain
+     CSS flex column with no wrapper-aware styling, so the buttons need to
+     be its direct children for the existing spacing/layout to apply
+     unchanged; the anchor just marks where they go and is otherwise
+     invisible and inert. Button markup (tag, attributes) intentionally
+     mirrors what used to be written by hand in index.html, so the existing
+     CSS (which targets "#soundPanel button" generically, not specific
+     buttons) needs no changes. Called once, after the manifest has been
+     fetched and AMBIENCE_SOURCES built. */
+  function renderAmbienceButtons(){
+    const anchor = document.getElementById('ambienceAnchor');
+    if(!anchor) return;
+    // clear any previously-inserted buttons (harmless if called again)
+    document.querySelectorAll('#soundPanel button[data-sound]').forEach(b=> b.remove());
+    Object.keys(AMBIENCE_SOURCES).forEach(key=>{
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.sound = key;
+      btn.setAttribute('aria-pressed', 'false');
+      btn.textContent = AMBIENCE_SOURCES[key].name;
+      anchor.parentNode.insertBefore(btn, anchor);
     });
-  });
-  document.getElementById('soundOff').addEventListener('click', ()=>{
-    if(SoundScape.isSwitching()) return;
-    setActiveAmbienceUI(null);
-    Storage.set('lastAmbience', null);
-    SoundScape.stop();
-  });
-  // a network hiccup or unreachable file fails quietly — drop the UI back to "Silent Courtyard"
-  document.addEventListener('ambience-error', ()=>{
-    setActiveAmbienceUI(null);
-    Storage.set('lastAmbience', null);
-  });
+  }
 
-  const soundVolume = document.getElementById('soundVolume');
-  soundVolume.value = Math.round(SoundScape.getVolume() * 100);
-  soundVolume.addEventListener('input', ()=>{
-    SoundScape.setVolume(soundVolume.value / 100);
-  });
+  /* Wires up everything in the sound panel: the toggle, each ambience
+     button (built moments earlier by renderAmbienceButtons), Silent
+     Courtyard, the volume slider, and error fallback. Runs once, after
+     the manifest has loaded and the buttons above exist in the DOM —
+     this is the only reason ambience setup now waits for init() instead
+     of running at top-level like it used to. */
+  function initAmbienceUI(){
+    soundToggle.addEventListener('click', ()=>{
+      const expanded = soundToggle.getAttribute('aria-expanded') === 'true';
+      soundToggle.setAttribute('aria-expanded', String(!expanded));
+      soundPanel.classList.toggle('open', !expanded);
+    });
+    document.querySelectorAll('#soundPanel [data-sound]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const type = btn.dataset.sound;
+        if(SoundScape.isSwitching() || type === SoundScape.current()) return;
+        setActiveAmbienceUI(type);
+        Storage.set('lastAmbience', type);
+        SoundScape.play(type);
+      });
+    });
+    document.getElementById('soundOff').addEventListener('click', ()=>{
+      if(SoundScape.isSwitching()) return;
+      setActiveAmbienceUI(null);
+      Storage.set('lastAmbience', null);
+      SoundScape.stop();
+    });
+    // a network hiccup or unreachable file fails quietly — drop the UI back to "Silent Courtyard"
+    document.addEventListener('ambience-error', ()=>{
+      setActiveAmbienceUI(null);
+      Storage.set('lastAmbience', null);
+    });
+
+    const lastAmbience = Storage.get('lastAmbience', CONFIG.defaultAmbience);
+    // only restore the UI selection if that ambience still exists in the
+    // current manifest — an ambience removed from audio.json since the
+    // last visit should quietly fall back to "Silent Courtyard" rather
+    // than showing a phantom selection for a button that no longer exists.
+    if(lastAmbience && AMBIENCE_SOURCES[lastAmbience]) setActiveAmbienceUI(lastAmbience);
+    else if(lastAmbience) Storage.set('lastAmbience', null);
+
+    const soundVolume = document.getElementById('soundVolume');
+    soundVolume.value = Math.round(SoundScape.getVolume() * 100);
+    soundVolume.addEventListener('input', ()=>{
+      SoundScape.setVolume(soundVolume.value / 100);
+    });
+  }
 
   /* ---------------- init ----------------
      Content (config/chapters/verses) is fetched before the app renders anything
@@ -1451,6 +1522,8 @@
      since nothing else in the app depends on that data being ready sooner. */
   async function init(){
     await loadContent();
+    renderAmbienceButtons();
+    initAmbienceUI();
     runArrival();
     initStars();
     renderEmotions();
