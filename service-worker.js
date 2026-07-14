@@ -238,10 +238,15 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
-          const cache = await caches.open(PRECACHE);
-          const cached = await cache.match(resolveScoped('index.html'));
-          if (cached) return cached;
-          return await fetch(request);
+    const response = await fetch(new Request(request.url, { cache: 'no-cache' }));
+
+    if (response && response.ok) {
+        const cache = await caches.open(PRECACHE);
+        await cache.put(resolveScoped('index.html'), response.clone());
+    }
+
+    return response;
+        }
         } catch (e) {
           const cache = await caches.open(PRECACHE);
           const cached = await cache.match(resolveScoped('index.html'));
@@ -285,7 +290,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isSameOrigin(url) && PRECACHE_URL_SET.has(request.url)) {
-    event.respondWith(cacheFirst(request, PRECACHE));
+    event.respondWith(networkFirst(request, PRECACHE));
     return;
   }
 
