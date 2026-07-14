@@ -1646,3 +1646,83 @@ everything added purely for iOS/Safari has been removed.
 ### What remains
 - None — this was a clean removal. If Apple support is ever wanted again,
   the Session 23 entry above documents exactly what to re-add.
+
+## Session 25 — Previous / Next verse navigation on the verse page
+
+### Scope
+Requested improvement to the verse reading experience only: add smooth
+Previous/Next navigation between verses. No refactor, no redesign.
+
+### What changed
+- `index.html`: added a new `#verseNav` block inside `#view-verse`, sitting
+  between `#verseDetail` and the existing `#chapterCompletion` card. It
+  holds two buttons, `#prevVerseBtn` and `#nextVerseBtn`, styled with the
+  existing `.continue-btn` / `.continue-btn-primary` classes (no new button
+  style invented). The existing `#backToVerses` link at the top was left
+  untouched.
+- `app.js`:
+  - Added `currentVerseNumber` alongside the existing `currentChapterNumber`
+    state variable.
+  - Added `renderVerseNav(chapterNumber, verseNumber, versesLength)`, called
+    once from the `'verse'` branch of `goToRoute()` right after
+    `renderVerseDetail()`. It only sets button labels and a `data-action`
+    attribute — all real navigation still goes through `setRoute()`, the
+    same single path every other click in the app already uses.
+  - Added click handlers for `#prevVerseBtn` / `#nextVerseBtn` that branch
+    on `data-action`.
+- `styles.css`: appended one new block at the very end (`.verse-nav`,
+  `.verse-nav-actions`) — same pattern Session 23 used for the PWA banner
+  block. Nothing above it was touched.
+
+### Navigation rules implemented
+- Verse > 1 in its chapter → "← Previous Verse" (goes to `verse - 1`).
+- Verse 1 of a chapter → "← Back to Chapter" (goes to that chapter's verse
+  list), replacing Previous Verse.
+- Not the last verse in the chapter → "Next Verse →" (goes to `verse + 1`).
+- Last verse in the chapter, and `CHAPTERS` has a `number: chapter + 1`
+  entry → "Next Chapter →" (goes to that chapter's verse list — same
+  destination the existing chapter-completion "Continue to Chapter N+1"
+  button already uses, for consistency).
+- Last verse of the chapter with no next chapter (i.e. Chapter 18) →
+  "Return Home".
+
+### What was intentionally left alone
+- Reading progress (`lastReading`), the reading-journey progress line,
+  scroll-to-top on route change, the chapter-completion reflection card,
+  ambience, service worker, PWA install flow, search, and chapter/verse
+  JSON loading — all unchanged. Scroll-to-top in particular needed no new
+  code: `showView()` already calls `window.scrollTo({top:0,...})` on every
+  route render, including verse-to-verse, since `goToRoute()`'s `'verse'`
+  branch calls `showView('verse')` on every navigation regardless of
+  whether the previous view was also `'verse'`.
+- The new `#verseNav` sits *above* `#chapterCompletion` in the markup, not
+  below it, so on a chapter's final verse the quiet completion ritual still
+  reads as the last thing on the page rather than competing for attention
+  with a utility button row. This does mean a final verse can show both
+  "Next Chapter →" (verse-nav) and "Continue to Chapter N+1"
+  (chapter-completion) — two paths to the same place. Left as-is since
+  removing either was out of this session's scope; flagging it here in
+  case a future session wants to reconcile them.
+
+### Verification
+- `node --check app.js` passes.
+- Diffed all three changed files against the pre-session versions: every
+  changed line is additive (new lines only), nothing pre-existing was
+  reordered, removed, or rewritten.
+
+### What remains
+- None for this task. The chapter-completion / verse-nav duplication noted
+  above is the only open question, and it's cosmetic, not a bug.
+
+### Follow-up correction (same session)
+Per feedback, removed the "Next Chapter →" / "Return Home" duplication
+noted above:
+- `renderVerseNav()` in `app.js` now simply hides `#nextVerseBtn`
+  (`display:none`) on a chapter's final verse instead of relabeling it. The
+  `CHAPTERS.find(c => c.number === chapterNumber + 1)` lookup and the
+  `next-chapter` / `return-home` actions were removed entirely.
+- `#nextVerseBtn`'s click handler now only handles `next-verse`.
+- Final verse of a chapter now shows only "← Previous Verse" in the
+  footer nav; the existing chapter-completion card is once again the sole
+  way to continue to the next chapter, preserving the reflective pause.
+- No markup or CSS changes were needed for this correction.

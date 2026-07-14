@@ -833,7 +833,9 @@
       const v = verses.find(item => item.verse === route.verse);
       if(!v){ setRoute({ view: 'verses', chapter: route.chapter }, { replace: true }); return; }
       currentChapterNumber = route.chapter;
+      currentVerseNumber = route.verse;
       renderVerseDetail(v);
+      renderVerseNav(route.chapter, route.verse, verses.length);
       showView('verse');
       updateReadingJourney(route.chapter, verses.length, route.verse);
       updateProgressLabel(route.chapter, route.verse, verses.length);
@@ -914,6 +916,7 @@
   // Tracks which chapter's verse list is currently open, so the verse-detail
   // view knows what to render and where "back" should return to.
   let currentChapterNumber = null;
+  let currentVerseNumber = null; // tracks the open verse so Previous/Next verse nav knows where it is
 
   // Draws the chapters overview from whatever CHAPTERS currently holds —
   // real metadata for chapters already fetched this session, a quiet
@@ -1099,6 +1102,53 @@
       </div>
     `;
   }
+
+  /* ---------------- verse navigation (Previous / Next) ----------------
+     Renders the two footer buttons for the currently-open verse. Pure
+     labeling/branching logic — the actual navigation always goes through
+     setRoute()/goToRoute(), the same path every other nav in the app uses,
+     so reading progress, the reading-journey line, and scroll-to-top all
+     keep working exactly as they already do for any other route change. */
+  function renderVerseNav(chapterNumber, verseNumber, versesLength){
+    const prevBtn = document.getElementById('prevVerseBtn');
+    const nextBtn = document.getElementById('nextVerseBtn');
+    if(!prevBtn || !nextBtn) return;
+
+    if(verseNumber > 1){
+      prevBtn.textContent = '← Previous Verse';
+      prevBtn.dataset.action = 'prev-verse';
+    } else {
+      prevBtn.textContent = '← Back to Chapter';
+      prevBtn.dataset.action = 'back-to-chapter';
+    }
+
+    if(verseNumber < versesLength){
+      nextBtn.textContent = 'Next Verse →';
+      nextBtn.dataset.action = 'next-verse';
+      nextBtn.style.display = '';
+    } else {
+      // Final verse of the chapter: no Next Chapter / Return Home here.
+      // The chapter-completion card below is the only way to continue —
+      // this avoids a duplicate action and preserves that reflective pause.
+      nextBtn.style.display = 'none';
+      delete nextBtn.dataset.action;
+    }
+  }
+
+  document.getElementById('prevVerseBtn')?.addEventListener('click', (e)=>{
+    const action = e.currentTarget.dataset.action;
+    if(action === 'back-to-chapter'){
+      setRoute({ view: 'verses', chapter: currentChapterNumber });
+    } else if(action === 'prev-verse'){
+      setRoute({ view: 'verse', chapter: currentChapterNumber, verse: currentVerseNumber - 1 });
+    }
+  });
+
+  document.getElementById('nextVerseBtn')?.addEventListener('click', (e)=>{
+    if(e.currentTarget.dataset.action === 'next-verse'){
+      setRoute({ view: 'verse', chapter: currentChapterNumber, verse: currentVerseNumber + 1 });
+    }
+  });
 
   document.getElementById('chapterList')?.addEventListener('click', (e)=>{
     const row = e.target.closest('.chapter-row');

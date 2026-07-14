@@ -820,3 +820,15 @@
 @media (max-width: 520px){
   .pwa-banner{ bottom:12px; padding:12px 14px; font-size:0.85rem; }
 }
+
+/* ---------- verse navigation (Previous/Next verse) ----------
+   Appended without touching any rule above. Reuses the existing
+   .continue-btn / .continue-btn-primary look from the chapter-completion
+   card so this reads as part of the original design. Sits between the
+   verse content and the chapter-completion reflection card, so the
+   completion ritual still lands as the last, unhurried thing on the page. */
+.verse-nav{
+  max-width:520px; margin:48px auto 0; padding-top:36px;
+  border-top:1px solid var(--line-soft);
+}
+.verse-nav-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
