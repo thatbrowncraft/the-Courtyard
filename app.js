@@ -54,7 +54,7 @@
     defaultTheme: 'dusk',
     defaultAmbience: null,
     reducedMotionDefault: false,
-    defaultVolume: 0.45
+    defaultVolume: 0.5
   };
   // Fallback manifest used only if data/chapters.json can't be fetched
   // (e.g. opened without a local server) — same 18-chapter shape either way.
@@ -1258,28 +1258,23 @@
     }
   });
 
-  /* ---------------- ambient sound: real recorded ambience, never autoplay ----------------
-     Five audio options. Each is a real field recording (not synthesized), sourced
-     from Freesound under a CC0 or CC-BY license — credits below. Files are lazy:
-     nothing is fetched until a person actually picks an ambience, and only one
+  /* ---------------- ambient sound: modular local MP3 ambience, never autoplay ----------------
+     Five ambience options, each backed by a local file under assets/audio/. Files are
+     lazy: nothing is fetched until a person actually picks an ambience, and only one
      ever plays at once. Switching crossfades over ~2 seconds; volume ramps smoothly.
 
-     NOTE for next session: "Krishna's Flute" still has no source wired in.
-     Searched again this session specifically for a genuine, seamlessly-loopable,
-     clearly-licensed bansuri recording — still no confident match. What turns up
-     is either a bare tuning scale (not a real ambient performance), a different
-     instrument entirely, or unclear/unverifiable licensing. Rather than wire in
-     something that might not actually be what it claims to be, the slot stays
-     empty. Clicking it now surfaces a soft in-world message instead of doing
-     nothing (see the click handler below), so it no longer feels like a dead
-     button — but it still isn't the real thing. Drop a verified, licensed,
-     loopable bansuri file's URL into AMBIENCE_SOURCES.flute.url to finish it. */
+     To swap or add ambience audio: replace the MP3 at the given path (same filename)
+     or point AMBIENCE_SOURCES at a new one. No JavaScript changes are required to
+     swap ambience — the app only ever references these filenames. If a file is
+     missing or fails to load, the audio element's error event fires and the app
+     fails quietly back to "Silent Courtyard" (see handleError below) rather than
+     breaking anything. */
   const AMBIENCE_SOURCES = {
-    flute:   { url: '', credit: null },
-    temple:  { url: 'https://cdn.freesound.org/previews/466/466652_9226170-lq.mp3', credit: 'temple bell, recorded in Himachal Pradesh, India — ganiket on Freesound, CC0' },
-    river:   { url: 'https://cdn.freesound.org/previews/39/39831_28216-lq.mp3', credit: 'river water — Arctura on Freesound, CC BY 3.0' },
-    wind:    { url: 'https://cdn.freesound.org/previews/360/360568_501389-lq.mp3', credit: 'wind moving through trees — jordir on Freesound, CC0' },
-    insects: { url: 'https://cdn.freesound.org/previews/320/320145_140737-lq.mp3', credit: 'night crickets, rural Australia — OwlStorm on Freesound, CC0' }
+    temple: { url: 'assets/audio/temple.mp3' },
+    flute:  { url: 'assets/audio/bansuri.mp3' },
+    river:  { url: 'assets/audio/river.mp3' },
+    banyan: { url: 'assets/audio/banyan.mp3' },
+    village:{ url: 'assets/audio/village.mp3' }
   };
   const CROSSFADE_MS = 2000;
   const LOOP_XFADE_MS = 700; // a short self-crossfade just before each clip's natural end,
@@ -1367,7 +1362,7 @@
       // ignore taps mid-crossfade, and ignore re-picking whatever's already playing
       if(switching || type === activeType) return;
       const source = AMBIENCE_SOURCES[type];
-      if(!source || !source.url) return; // no verified recording for this ambience yet
+      if(!source || !source.url) return; // guard only — every configured ambience has a path
       ensureSlots();
       const incoming = activeSlot ? otherSlot(activeSlot) : slotA;
       const outgoing = activeSlot;
@@ -1424,12 +1419,6 @@
   document.querySelectorAll('#soundPanel [data-sound]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const type = btn.dataset.sound;
-      const source = AMBIENCE_SOURCES[type];
-      if(!source || !source.url){
-        // no verified recording sits behind this one yet — say so gently rather than doing nothing
-        whisper('This ambience is still finding its voice.');
-        return;
-      }
       if(SoundScape.isSwitching() || type === SoundScape.current()) return;
       setActiveAmbienceUI(type);
       Storage.set('lastAmbience', type);

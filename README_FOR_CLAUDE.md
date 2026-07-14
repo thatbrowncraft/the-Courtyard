@@ -51,8 +51,11 @@ kanha-jis-courtyard/
     chapter-01.json         — all 47 real verses for Chapter 1, full schema (see §4)
     chapter-NN.json         — (future) one file per chapter that has real content
   assets/
-    audio/, icons/, images/ — currently empty (see their own README.md for why); ambient
-                              sound is streamed from remote CDN URLs today, no local audio yet
+    audio/                 — temple.mp3, bansuri.mp3, river.mp3, banyan.mp3, village.mp3
+                              (Session 20). The app only ever references these five
+                              filenames; replacing a file's contents (same name) is all
+                              that's needed to change what plays — no code change required.
+    icons/, images/        — currently empty (see their own README.md for why)
   README_FOR_CLAUDE.md     — this file
   CHANGELOG.md             — session-by-session history
 ```
@@ -257,11 +260,16 @@ despair, without turning clinical.
 - `emotions`, `keywords`, `related` fields exist in Chapter 1 data but are
   unused by any template — mood-matching from the home screen, real search,
   and cross-referencing are all still open.
-- `AMBIENCE_SOURCES.flute.url` in `app.js` is still an empty string — no
-  verified flute/bansuri recording has been sourced yet.
-- Audio currently streams from remote CDN URLs (Freesound), not from
-  `assets/audio/` — that folder is reserved for a future move to local
-  files, not yet done.
+- **Ambience audio (Session 20)**: `AMBIENCE_SOURCES` in `app.js` now points
+  at local files in `assets/audio/` (`temple.mp3`, `bansuri.mp3`, `river.mp3`,
+  `banyan.mp3`, `village.mp3`) instead of remote Freesound URLs. Whether
+  actual audio files exist at those paths in the deployed project has not
+  been verified this session — no filesystem access to the live
+  `assets/audio/` folder was available. If a file is missing, playback
+  fails silently via the existing `error` → `ambience-error` handling and
+  the UI drops back to "Silent Courtyard"; nothing else breaks. Drop the
+  five MP3s into `assets/audio/` (or replace any of them later) with no
+  code changes needed — the filenames above are the only contract.
 - **The Session 15 "Continue your journey" card on Home now has a proper
   `.continue-card` rule in `styles.css`** (added Session 16, once that file
   was available) — no more inline styles except the `display:none` toggle,

@@ -1158,3 +1158,114 @@ existing styling beyond what this feature needed.
   completion prompt appear, then confirm "Continue to Chapter N+1" is
   hidden for chapters where the next one hasn't been written yet.
 - Everything else from Session 18 and README §7 is unchanged.
+
+## Session 20 — Modular local MP3 ambience system
+
+### Scope
+Replaced the temporary/remote ambience sourcing with a fully modular,
+filename-based local audio system. No routing, lazy-loading, search,
+collections, reading-progress, verse/chapter rendering, or JSON
+architecture was touched. The ambience panel's UI (labels, layout,
+buttons, volume slider) is visually identical — only the data behind it
+changed.
+
+### What changed
+- **`AMBIENCE_SOURCES` (`app.js`)**: now points at local files instead of
+  remote Freesound CDN URLs:
+  - Temple Courtyard → `assets/audio/temple.mp3`
+  - Krishna's Flute → `assets/audio/bansuri.mp3`
+  - Yamuna River → `assets/audio/river.mp3`
+  - Banyan Breeze → `assets/audio/banyan.mp3`
+  - Village Evening → `assets/audio/village.mp3`
+  - Silent Courtyard → no audio (unchanged; already stops playback rather
+    than mapping to a file)
+  
+  Swapping any ambience going forward means replacing the MP3 at that path
+  with the same filename — no JavaScript change is ever required.
+- **Removed the placeholder-era flute workaround**: the empty-URL guard,
+  the "no verified recording yet" comment block, and the
+  "This ambience is still finding its voice." whisper message on click are
+  gone, since every ambience now has a real local path. The existing
+  `error` → `ambience-error` handling (already built in an earlier session)
+  is what now covers a genuinely missing/failed MP3 file — it fails
+  quietly back to "Silent Courtyard," the same as any other playback
+  error, rather than a bespoke message for one button.
+- **Default volume**: `CONFIG.defaultVolume` changed from `0.45` to `0.5`
+  (50%), per spec. `index.html`'s static slider `value` attribute updated
+  to match (`45` → `50`); this is only the pre-JS fallback shown before
+  `soundVolume.value` is set from `SoundScape.getVolume()` on load.
+- **`data-sound` identifiers (`index.html`)**: renamed `wind` → `banyan`
+  and `insects` → `village` so the internal key matches its filename and
+  is self-describing. Button text, order, ARIA attributes, and all styling
+  are untouched — this is an internal attribute value, not visible UI.
+
+### What was intentionally left alone (already met the spec)
+- **Never autoplay / starts only on user interaction**: already enforced
+  via the existing `userInteracted` flag set on the first `pointerdown` or
+  `keydown`; `SoundScape.play()` returns immediately if that flag isn't
+  set yet. Untouched.
+- **Crossfade ~2s, never abrupt stop**: `CROSSFADE_MS = 2000` and the
+  existing `fade()` helper already ramp both the outgoing and incoming
+  `<audio>` elements' volume in parallel via `requestAnimationFrame`.
+  Untouched.
+- **Silent Courtyard fades out then stops, saves selection, plays
+  nothing**: already exactly this — `SoundScape.stop()` fades the active
+  slot to 0 and only calls `.pause()` in the fade's `onDone` callback;
+  the click handler sets `lastAmbience` to `null` and updates the UI.
+  Untouched.
+- **Remembers volume and last ambience via localStorage, restores on
+  return without auto-playing**: already implemented through the existing
+  `Storage` wrapper (`ambientVolume`, `lastAmbience` keys) and
+  `setActiveAmbienceUI()`, which only marks a button visually active on
+  load — it never calls `SoundScape.play()` itself. Untouched.
+- **Lazy-load, cache for the session**: `preload:'none'` on both audio
+  slots means nothing fetches until first selected; the browser's normal
+  HTTP cache handles re-selection within a session. Untouched.
+- **Missing file never breaks the app**: the `error` listener on each
+  `<audio>` element already routes into `handleError()`, which resets
+  state and dispatches `ambience-error` (caught by a document-level
+  listener that resets the UI to "Silent Courtyard"). This was already in
+  place from an earlier session and needed no change to cover local files
+  instead of remote ones — an HTTP 404 on a local path fires the same
+  `error` event a failed remote fetch did.
+- **Keyboard accessible / ARIA / focus states / reduced motion**: no
+  changes made or needed — `aria-pressed`, `aria-expanded`,
+  `aria-label`, and visible focus states on the sound panel buttons were
+  already present and are orthogonal to where the audio file lives.
+  `styles.css` was not touched at all this session.
+
+### Why each file was touched
+- `app.js`: the only file that could hold `AMBIENCE_SOURCES`, the
+  now-removed placeholder guard/whisper, and `CONFIG.defaultVolume`.
+- `index.html`: `data-sound` values for two buttons updated to match the
+  new filename-based keys, and the static volume slider default updated
+  to `50` for consistency with the new default. Button labels, structure,
+  and all other markup unchanged.
+- `styles.css`: not modified — no visual, layout, or animation change was
+  needed for this feature.
+
+### What was verified
+- `node --check app.js` passes.
+- Grepped `app.js` for every remaining reference to `AMBIENCE_SOURCES`,
+  the old `wind`/`insects` keys, and `data-sound` to confirm nothing was
+  left pointing at a stale key name.
+- Confirmed `scheduleInsects()` and the other visual ambient-animation
+  functions (fireflies, breeze, etc.) are unrelated to the audio system
+  and were not touched — they share the word "insects"/"breeze" only in
+  naming, not in code path.
+
+### Genuine limitations / what remains
+- **No live browser or device test was possible in this environment** —
+  the crossfade timing, loop-seam behavior, and error-fallback path were
+  verified by reading the code logic, not by actually hearing playback.
+- **The five MP3 files themselves were not sourced, verified, or placed
+  in `assets/audio/` this session** — this session only built the code
+  path that will use them once they exist. Confirm all five files are
+  present at the exact filenames above before relying on this in
+  production; until then, every ambience button will behave exactly like
+  a missing-file case (fails gracefully to Silent Courtyard).
+- A live smoke test is recommended next session: select each ambience,
+  confirm ~2s crossfade in both directions, confirm Silent Courtyard
+  fades out fully before stopping, refresh the page and confirm the last
+  ambience shows as selected without auto-playing, and test with one MP3
+  deliberately renamed/removed to confirm the graceful-failure path.
