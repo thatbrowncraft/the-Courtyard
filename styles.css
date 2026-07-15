@@ -34,7 +34,15 @@
     --candle:#FFCB8E; --line: rgba(255,244,228,0.18); --line-soft: rgba(255,244,228,0.1);
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
+  html{
+    scroll-behavior:smooth;
+    /* Guarantees the viewport canvas itself is never white: normally the
+       body's background paints the canvas too (CSS background propagation),
+       but that propagation is exactly what a scroll-triggered repaint of the
+       fixed decorative layers below can outrun for a frame. Setting this
+       explicitly removes any dependency on propagation timing. */
+    background-color:var(--ink-deep);
+  }
   body{
     margin:0;
     min-height:100vh;
@@ -47,6 +55,11 @@
     font-weight:400;
     font-size:18.5px;
     overflow-x:hidden;
+    /* Prevents iOS/Android rubber-band overscroll from momentarily
+       revealing the area beyond the document — the other half of the
+       same white-flash symptom, distinct from the fixed-layer repaint
+       fixed below. Vertical scrolling itself is untouched. */
+    overscroll-behavior-y:none;
     position:relative;
     transition: background 1.1s ease, color 1.1s ease;
   }
@@ -178,6 +191,20 @@
   #arrivalTitle.a-tagline p{ opacity:1; }
 
   /* ================= LIVING BACKGROUND ================= */
+  /* These four layers (#stars, #courtyard, #atmosphere, #ambient) are each
+     position:fixed, inset:0, and stay mounted for the whole session — they
+     are the "Courtyard" itself. Without an explicit GPU layer, browsers may
+     repaint them on the main thread in sync with scroll instead of just
+     recompositing, and that repaint can lag a frame behind the scroll itself.
+     In that gap, whatever's underneath (the plain canvas, or a lower layer
+     mid-repaint) is briefly visible — the reported white flash. Promoting
+     each to its own compositor layer removes that dependency on repaint
+     timing; visually nothing changes, since translateZ(0) is a null
+     transform. */
+  #stars, #courtyard, #atmosphere, #ambient{
+    transform:translateZ(0);
+    backface-visibility:hidden;
+  }
   /* Floating dust, lit by unseen candlelight — replaces the old star field */
   #stars{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.55; transition:opacity 1.6s ease; }
   .star{ position:absolute; background:var(--gold-bright); border-radius:50%; opacity:0; filter:blur(0.3px); box-shadow:0 0 3px 1px rgba(224,174,100,0.3); animation:dustglow ease-in-out infinite; }
