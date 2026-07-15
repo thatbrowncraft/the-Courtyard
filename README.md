@@ -41,6 +41,36 @@ your cache.
 
 ---
 
+## Your Journal, and backing it up
+
+The Journal is private by design: entries are written to this device only,
+never uploaded, never synced to any account, never tracked. There's no
+sign-in anywhere in the Courtyard, and the Journal doesn't change that.
+
+Because entries live only in this browser's local storage, clearing your
+site data — or moving to a new phone or computer — will lose them, with no
+way to recover them from anywhere else. To make that a choice rather than
+an accident, Settings has a **Your Journal** section:
+
+- **Export Journal** downloads every entry, with its original timestamp, as
+  a single file named like `kanha-ji-journal-2026-07-15.json`. Keep it
+  wherever you'd keep any personal file — this app never sees it again
+  unless you bring it back.
+- **Import Journal** lets you choose a previously exported file and restore
+  it. You'll be asked to confirm first, since importing replaces whatever
+  journal is currently on this device. If the file isn't a valid Courtyard
+  backup, you'll see a plain explanation instead of an error — nothing
+  breaks, and nothing on the device changes.
+
+If you haven't written anything yet, Export stays disabled with a note
+that there's nothing to export.
+
+This is a manual, one-file, one-device-to-another process — there is no
+automatic sync, no cloud storage, and no account behind it. That's
+intentional.
+
+---
+
 ## Adding ambience sounds (no coding needed)
 
 The Courtyard plays soft background ambience — temple bells, a flute, a

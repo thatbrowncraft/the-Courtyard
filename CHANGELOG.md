@@ -1794,3 +1794,114 @@ time. This is a caching/deployment issue, not an application bug.
 
 ### What remains
 - None for this task. This was a caching-strategy fix, not new scope.
+
+## Session 27 — Journal Backup: manual export / import (Settings)
+
+### Scope
+New feature, additive only. Extends the existing local-only Journal with a
+manual way to move entries in and out as a file — no new architecture, no
+new Storage keys, no change to how journal entries are written or rendered
+day-to-day. `app.js`'s existing `renderJournal()` / `saveJournalBtn` logic,
+`index.html`'s Settings markup style, and `styles.css`'s existing
+`.card` / `.setting-row` language are all reused as-is.
+
+### Why
+Journal entries lived only in this device's Storage (`localStorage`, or an
+in-memory fallback where that's unavailable). Clearing site data, or
+moving to a new device, permanently lost every entry with no way back.
+This session adds a way to back that up, without touching the Journal's
+core philosophy: still offline-first, local-only, never uploaded, never
+synced, never tracked, no account of any kind.
+
+### What changed
+
+**`index.html`**
+- Added a new `.card` to `#view-settings`, titled **Your Journal**, sitting
+  directly below the existing settings card. Uses the exact same
+  `.setting-row` / `.setting-label` / `.setting-desc` markup as every other
+  row on the page, and the same inline button style already used for
+  Replay/Clear — no new visual language introduced.
+- Three rows: an intro row (title + "Your reflections stay on this device
+  unless you choose to export them."), an **Export Journal** row, and an
+  **Import Journal** row. Import's button triggers a hidden
+  `<input type="file" accept="application/json,.json" hidden>` — the file
+  picker itself, not a custom one.
+- A single quiet status line (`#journalBackupStatus`, `aria-live="polite"`)
+  sits at the bottom of the card for export/import feedback and error
+  messages, so those never depend on the existing `whisper()` toast's
+  15-second throttle (see `app.js` note below).
+
+**`app.js`**
+- Added a self-contained "journal backup" block, placed directly after the
+  existing `saveJournalBtn` handler:
+  - `updateJournalBackupUI()` — enables/disables the Export button and
+    updates its description based on the current entry count. Called
+    whenever Settings is opened (new one-line hook in `revealView()`,
+    matching the existing `if(id==='journal') renderJournal()` pattern)
+    and after any import.
+  - `exportJournal()` — reads the same `journalEntries` Storage array
+    already used everywhere else, wraps it as
+    `{ app, appVersion, exportedAt, entries }` (app name from `CONFIG`,
+    version from `CONFIG.version` if present), and downloads it as
+    `kanha-ji-journal-YYYY-MM-DD.json` via an in-memory `Blob` + object
+    URL. No entry data is altered, reordered, or filtered — every entry,
+    its timestamp, and nothing else.
+  - `isValidJournalBackup(data)` — the only validation gate: an object
+    with an `entries` array where every item has a string `text` and a
+    numeric `ts`. Intentionally not stricter than that, so older or
+    hand-edited exports still restore.
+  - `importJournalFromFile(file)` — reads the chosen file via
+    `FileReader`, `JSON.parse`s it in a `try/catch`, validates it, and
+    only then shows a native `confirm()` explaining that importing
+    replaces the journal on this device. On confirmation: replaces
+    `journalEntries` in Storage, re-renders the Journal and Stats views,
+    and updates the backup UI. A malformed file, invalid JSON, or a file
+    that fails validation shows a calm status message
+    ("That doesn't look like a Courtyard journal backup. Nothing was
+    changed.") and stops there — nothing is thrown, nothing is cleared.
+  - Three small event listeners: Export button → `exportJournal()`,
+    Import button → clicks the hidden file input, file input's `change`
+    → `importJournalFromFile()` (and resets its own value afterward so
+    picking the same file twice in a row still fires `change`).
+
+**`styles.css`**
+- One rule added: `#exportJournalBtn:disabled{ opacity:0.4;
+  cursor:not-allowed; }`, scoped to that single button so no other
+  control on the page is affected.
+
+### Empty-state handling
+With zero journal entries, the Export button is disabled and its
+description reads "Nothing to export yet — write something first."
+instead of the entry count. Import is always available regardless of
+whether the device currently has entries.
+
+### What was intentionally left alone
+- The Journal's own storage, writing, and rendering logic
+  (`renderJournal()`, the save handler, `journal-entry` markup) —
+  untouched.
+- `whisper()` — still used only for its existing ambient confirmations;
+  backup feedback goes through the new dedicated status line instead so a
+  recent unrelated whisper can't swallow an import error.
+- No new Storage keys, no IndexedDB, no cloud/account/auth of any kind —
+  export and import both operate on the same `journalEntries` key that
+  already existed.
+- Service worker, PWA install flow, and offline caching — this feature
+  makes no network requests either way, so nothing there needed to
+  change.
+
+### Verification
+- `node --check app.js` passes.
+- Diffed all three changed files against the pre-session versions: every
+  changed line is additive; nothing pre-existing was reordered, removed,
+  or rewritten.
+
+### What remains
+- Not yet tested in a live browser (no browser available in this
+  session's environment) — recommend a manual pass: export with a few
+  entries, clear site data, re-import the file, confirm entries and
+  timestamps match; also try importing an unrelated JSON file and confirm
+  the calm error path.
+- If a future session wants collections/other local data included in the
+  same backup file, this export shape (`{ app, appVersion, exportedAt,
+  entries }`) can be extended with an additional top-level key without
+  breaking `isValidJournalBackup()`'s current check.

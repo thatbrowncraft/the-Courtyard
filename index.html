@@ -302,6 +302,31 @@
           <button id="clearDataBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Clear</button>
         </div>
       </div>
+
+      <div class="card" id="journalBackupCard">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label" style="font-size:1.05rem;">Your Journal</div>
+            <div class="setting-desc">Your reflections stay on this device unless you choose to export them.</div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Export Journal</div>
+            <div class="setting-desc" id="exportJournalDesc">Download every entry as a single file, kept only by you.</div>
+          </div>
+          <button id="exportJournalBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Export</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Import Journal</div>
+            <div class="setting-desc">Restore entries from a file you exported earlier — this replaces what's on this device.</div>
+          </div>
+          <button id="importJournalBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Import</button>
+          <input type="file" id="importJournalInput" accept="application/json,.json" hidden>
+        </div>
+        <p class="setting-desc" id="journalBackupStatus" aria-live="polite" style="text-align:center; margin-top:6px;"></p>
+      </div>
     </div>
   </section>
 

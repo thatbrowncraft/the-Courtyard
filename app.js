@@ -729,6 +729,7 @@
     if(id === 'stats') renderStats();
     if(id === 'journal') renderJournal();
     if(id === 'chapters') renderChapters();
+    if(id === 'settings') updateJournalBackupUI();
     // reading mode: opening a verse hides everything but the back button and the verse itself
     document.body.classList.toggle('reading-mode', id === 'verse');
   }
@@ -1225,6 +1226,106 @@
     renderJournal();
     tuneDiya();
     whisper("I'll keep this here for you.");
+  });
+
+  /* ---------------- journal backup (export / import) ----------------
+     Manual, user-initiated file export/import of the exact same
+     `journalEntries` Storage already holds — no network calls, no new
+     Storage keys, nothing local becomes non-local. This is the only way
+     journal entries survive a cleared cache or a move to a new device,
+     while keeping the Journal itself untouched: offline-first, account-
+     free, never synced, never tracked. */
+
+  // Keeps the Export button (and its description) honest about whether
+  // there's anything to export — called whenever Settings is opened, and
+  // after anything that can change the entry count (save, import, clear).
+  function updateJournalBackupUI(){
+    const entries = Storage.get('journalEntries', []);
+    const exportBtn = document.getElementById('exportJournalBtn');
+    const exportDesc = document.getElementById('exportJournalDesc');
+    if(!exportBtn || !exportDesc) return;
+    const empty = entries.length === 0;
+    exportBtn.disabled = empty;
+    exportDesc.textContent = empty
+      ? 'Nothing to export yet — write something first.'
+      : `Download all ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} as a single file, kept only by you.`;
+  }
+
+  function setJournalBackupStatus(text){
+    const el = document.getElementById('journalBackupStatus');
+    if(el) el.textContent = text;
+  }
+
+  function exportJournal(){
+    const entries = Storage.get('journalEntries', []);
+    if(entries.length === 0) return; // the button is disabled too; this is just a safety net
+    const payload = {
+      app: CONFIG.appTitle || "Kanha Ji's Courtyard",
+      appVersion: CONFIG.version || null,
+      exportedAt: new Date().toISOString(),
+      entries
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const stamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kanha-ji-journal-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setJournalBackupStatus(`Saved ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} to your device.`);
+  }
+
+  // A backup is considered valid if it has the shape exportJournal() produces:
+  // an object with an `entries` array of { text: string, ts: number }.
+  // Deliberately not stricter than that, so a slightly older export (or one
+  // with extra fields) still restores instead of being rejected outright.
+  function isValidJournalBackup(data){
+    return !!data && Array.isArray(data.entries) && data.entries.every(e =>
+      e && typeof e.text === 'string' && typeof e.ts === 'number'
+    );
+  }
+
+  function importJournalFromFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try{
+        data = JSON.parse(reader.result);
+      }catch(e){
+        setJournalBackupStatus("That file couldn't be read as a journal backup. Nothing was changed.");
+        return;
+      }
+      if(!isValidJournalBackup(data)){
+        setJournalBackupStatus("That doesn't look like a Courtyard journal backup. Nothing was changed.");
+        return;
+      }
+      if(!confirm('Importing will replace the journal currently stored on this device. Continue?')) return;
+      Storage.set('journalEntries', data.entries);
+      renderJournal();
+      renderStats();
+      updateJournalBackupUI();
+      setJournalBackupStatus(`Restored ${data.entries.length} ${data.entries.length === 1 ? 'entry' : 'entries'}.`);
+      whisper('Your journal is back with you.');
+    };
+    reader.onerror = () => {
+      setJournalBackupStatus("That file couldn't be read. Nothing was changed.");
+    };
+    reader.readAsText(file);
+  }
+
+  document.getElementById('exportJournalBtn')?.addEventListener('click', exportJournal);
+
+  document.getElementById('importJournalBtn')?.addEventListener('click', ()=>{
+    document.getElementById('importJournalInput')?.click();
+  });
+
+  document.getElementById('importJournalInput')?.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(file) importJournalFromFile(file);
+    e.target.value = ''; // allow re-selecting the same file again later
   });
 
   /* ---------------- stats ---------------- */
