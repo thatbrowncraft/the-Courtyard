@@ -1726,3 +1726,71 @@ noted above:
   footer nav; the existing chapter-completion card is once again the sole
   way to continue to the next chapter, preserving the reflective pause.
 - No markup or CSS changes were needed for this correction.
+
+## Session 26 — PWA update reliability fix (stale Service Worker cache)
+
+### Scope
+Bug fix only, isolated to the PWA update/caching layer (`pwa.js` and
+`service-worker.js`). No application logic, markup, or styling touched.
+The Previous Verse / Next Verse navigation shipped in Session 25 was never
+actually broken — this session addresses why it (and any other newly
+deployed feature) appeared to be missing on the live GitHub Pages site
+while working correctly locally.
+
+### Root cause
+The live site was serving an outdated cached copy of `index.html` and the
+rest of the app shell. The Service Worker installed on a person's device
+kept answering navigation requests and app-shell fetches straight from its
+existing cache, so a fresh deployment on GitHub Pages had no way to reach
+anyone who had already visited the site — including the Previous Verse /
+Next Verse buttons, which were present in the deployed files the whole
+time. This is a caching/deployment issue, not an application bug.
+
+### What changed
+
+**`pwa.js`**
+- Service Worker registration now passes `updateViaCache: 'none'`, so the
+  browser always re-checks GitHub for the newest `service-worker.js`
+  itself instead of ever reusing a cached copy of the worker script.
+- Added an explicit `registration.update()` call immediately after a
+  successful registration, so every app launch actively checks for a
+  newer deployment rather than waiting for the browser's own update
+  heuristics.
+
+**`service-worker.js`**
+- Navigation requests (i.e. loading `index.html`) no longer serve the
+  cached copy unconditionally. The strategy is now: when online, always
+  fetch the latest deployed `index.html`, serve that, and store the fresh
+  copy in the cache; when offline, fall back to whatever copy is already
+  cached. Offline support is fully preserved — only the online path
+  changed.
+- The app-shell precache strategy (`index.html`, `app.js`, `styles.css`,
+  `pwa.js`) changed from `cacheFirst(request, PRECACHE)` to
+  `networkFirst(request, PRECACHE)`. These files now update immediately
+  after a new deployment when a network connection is available, and
+  still fall back to the cached version when offline — the same
+  online-fresh/offline-fallback pattern used for navigation requests
+  above, applied consistently across the whole app shell.
+
+### Result
+- Resolved the reported issue: the Previous Verse and Next Verse buttons
+  (and any other recently deployed feature) now appear on the live
+  GitHub Pages site as soon as it's redeployed, instead of requiring a
+  manual cache clear.
+- The PWA now detects new deployments automatically, checks for Service
+  Worker updates on every launch, and serves fresh app-shell files
+  whenever the person is online — combining `networkFirst` for the app
+  shell with an offline cache fallback, so full offline functionality is
+  unchanged.
+
+### What was intentionally left alone
+- Chapter and ambience-audio caching (still lazy, cache-first by design —
+  unrelated to this fix and not the source of the reported problem).
+- The existing "newer version ready" refresh banner in `pwa.js` — still
+  never forces a refresh on anyone.
+- `CACHE_VERSION` bump discipline described in
+  `README_FOR_CLAUDE.md` §8 — unchanged; still the responsibility of
+  whichever future session next edits a precached file.
+
+### What remains
+- None for this task. This was a caching-strategy fix, not new scope.

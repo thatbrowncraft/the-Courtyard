@@ -25,6 +25,20 @@ ambience sounds you've already opened) without an internet connection.
   when a new version of the site is deployed, a small banner offers to
   refresh whenever you're ready — nothing updates without you tapping it.
 
+**How updates reach your device:** the app uses a smarter update flow so
+new deployments show up promptly instead of getting stuck behind an old
+cache. Every launch checks GitHub for a newer Service Worker automatically.
+The app shell (the page itself, its styling, and its behavior) uses a
+`networkFirst` strategy: while you're online, it always fetches the latest
+deployed version and quietly keeps a copy for later; if you happen to open
+the app without a connection, it falls back to that last cached copy so
+nothing breaks. Chapters and ambience sounds still work the way they
+always have — cached the first time you open them, so they're available
+offline from then on. The end result is that a newly deployed feature (a
+new chapter, a fix, a small improvement) should appear the next time you
+open the app with a connection, without you ever needing to manually clear
+your cache.
+
 ---
 
 ## Adding ambience sounds (no coding needed)
