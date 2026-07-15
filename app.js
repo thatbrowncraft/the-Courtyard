@@ -988,6 +988,8 @@
      tied to a hardcoded chapter number, since "next chapter" is simply
      whichever chapter number follows in CHAPTERS. */
   const CHAPTER_COMPLETION_LINE = "Take a moment before beginning the next chapter.";
+  const FINAL_CHAPTER_NUMBER = 18;
+  const FINAL_CHAPTER_COMPLETION_LINE = "Thank you for walking through the Bhagavad Gita.\nMay Krishna's wisdom remain with you beyond these pages.";
 
   function toggleChapterCompletion(show){
     const el = document.getElementById('chapterCompletion');
@@ -1003,7 +1005,9 @@
     const textEl = document.getElementById('chapterCompletionText');
     const nextBtn = document.getElementById('continueNextChapterBtn');
     if(!el || !textEl || !nextBtn) return;
-    textEl.textContent = CHAPTER_COMPLETION_LINE;
+    textEl.textContent = chapterNumber === FINAL_CHAPTER_NUMBER
+      ? FINAL_CHAPTER_COMPLETION_LINE
+      : CHAPTER_COMPLETION_LINE;
     const nextChapter = CHAPTERS.find(c => c.number === chapterNumber + 1);
     if(nextChapter){
       nextBtn.textContent = `Continue to Chapter ${chapterNumber + 1}`;
