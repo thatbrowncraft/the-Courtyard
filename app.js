@@ -49,7 +49,7 @@
      touching this file: add data/chapter-NN.json (with its own id/title/
      subtitle/verses) and list its filename in data/chapters.json. */
   let CONFIG = {
-    version: '2.0.0',
+    version: '2.1.0',
     appTitle: "Kanha Ji's Courtyard",
     defaultTheme: 'dusk',
     defaultAmbience: null,
@@ -730,6 +730,7 @@
     if(id === 'journal') renderJournal();
     if(id === 'chapters') renderChapters();
     if(id === 'settings') updateJournalBackupUI();
+    if(id === 'about') renderAbout();
     // reading mode: opening a verse hides everything but the back button and the verse itself
     document.body.classList.toggle('reading-mode', id === 'verse');
   }
@@ -757,7 +758,7 @@
      click something. Either way the same goToRoute() function ends up
      driving the visible view, so there's exactly one path through the code
      rather than two that could drift apart. */
-  const KNOWN_SIMPLE_VIEWS = ['home','chapters','search','collections','journal','meditation','stats','settings'];
+  const KNOWN_SIMPLE_VIEWS = ['home','chapters','search','collections','journal','meditation','stats','settings','about'];
 
   function hashFor(route){
     if(route.view === 'verses' && route.chapter) return `#/chapter/${route.chapter}`;
@@ -1224,7 +1225,6 @@
     Storage.set('journalEntries', entries);
     input.value = '';
     renderJournal();
-    updateJournalBackupUI();
     tuneDiya();
     whisper("I'll keep this here for you.");
   });
@@ -1235,64 +1235,21 @@
      Storage keys, nothing local becomes non-local. This is the only way
      journal entries survive a cleared cache or a move to a new device,
      while keeping the Journal itself untouched: offline-first, account-
-     free, never synced, never tracked.
+     free, never synced, never tracked. */
 
-     The Courtyard never exports on its own — it only remembers, quietly,
-     whether the reflections on this device have made it into a backup
-     yet, and says so plainly. `journalBackupMeta` is the only new Storage
-     key: { lastBackupAt: ISO string | null, backedUpCount: number }.
-     Pending count is derived, not stored separately — it's simply how
-     many entries exist beyond `backedUpCount`, clamped at 0 so a cleared
-     journal (or an older backup with more entries than exist now) never
-     reads as a negative number. */
-
-  function getJournalBackupMeta(){
-    return Storage.get('journalBackupMeta', { lastBackupAt: null, backedUpCount: 0 });
-  }
-  function setJournalBackupMeta(meta){
-    Storage.set('journalBackupMeta', meta);
-  }
-
-  // "Today, 8:42 PM" / "Yesterday, 9:14 PM" / "Jun 3, 4:05 PM" / "Never"
-  function formatBackupTimestamp(iso){
-    if(!iso) return 'Never';
-    const d = new Date(iso);
-    const now = new Date();
-    const startOfDay = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
-    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
-    const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    if(diffDays === 0) return `Today, ${time}`;
-    if(diffDays === 1) return `Yesterday, ${time}`;
-    return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
-  }
-
-  // Keeps the Export button, its description, the "Last backup" line, and
-  // the quiet status line honest — called whenever Settings is opened,
-  // and after anything that changes the entry count (save, import, clear).
+  // Keeps the Export button (and its description) honest about whether
+  // there's anything to export — called whenever Settings is opened, and
+  // after anything that can change the entry count (save, import, clear).
   function updateJournalBackupUI(){
     const entries = Storage.get('journalEntries', []);
-    const meta = getJournalBackupMeta();
-    const pending = Math.max(0, entries.length - (meta.backedUpCount || 0));
-
     const exportBtn = document.getElementById('exportJournalBtn');
     const exportDesc = document.getElementById('exportJournalDesc');
     if(!exportBtn || !exportDesc) return;
-
     const empty = entries.length === 0;
     exportBtn.disabled = empty;
     exportDesc.textContent = empty
-      ? 'Nothing to export yet.'
-      : 'Download a private backup of your reflections.';
-
-    const lastBackupEl = document.getElementById('journalLastBackupValue');
-    if(lastBackupEl) lastBackupEl.textContent = formatBackupTimestamp(meta.lastBackupAt);
-
-    const statusEl = document.getElementById('journalBackupStatus');
-    if(statusEl){
-      if(empty) statusEl.textContent = '🌿 No reflections yet.';
-      else if(pending > 0) statusEl.textContent = `🌿 ${pending} ${pending === 1 ? 'reflection hasn\u2019t' : 'reflections haven\u2019t'} been backed up yet.`;
-      else statusEl.textContent = '✓ Your journal is safely backed up.';
-    }
+      ? 'Nothing to export yet — write something first.'
+      : `Download all ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} as a single file, kept only by you.`;
   }
 
   function setJournalBackupStatus(text){
@@ -1319,13 +1276,7 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-
-    const meta = getJournalBackupMeta();
-    meta.lastBackupAt = new Date().toISOString();
-    meta.backedUpCount = entries.length;
-    setJournalBackupMeta(meta);
-    updateJournalBackupUI();
-    setJournalBackupStatus('🌿 Your reflections have been safely packed.');
+    setJournalBackupStatus(`Saved ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} to your device.`);
   }
 
   // A backup is considered valid if it has the shape exportJournal() produces:
@@ -1354,12 +1305,6 @@
       }
       if(!confirm('Importing will replace the journal currently stored on this device. Continue?')) return;
       Storage.set('journalEntries', data.entries);
-      // An imported journal is, by definition, already backed up somewhere —
-      // this file is that backup.
-      const meta = getJournalBackupMeta();
-      meta.lastBackupAt = new Date().toISOString();
-      meta.backedUpCount = data.entries.length;
-      setJournalBackupMeta(meta);
       renderJournal();
       renderStats();
       updateJournalBackupUI();
@@ -1383,6 +1328,19 @@
     if(file) importJournalFromFile(file);
     e.target.value = ''; // allow re-selecting the same file again later
   });
+
+  /* ---------------- about ----------------
+     Read-only page: no Storage, no user input. Its only dynamic piece is
+     the version number, which comes from CONFIG (mirrors config.json) so
+     it never has to be hand-edited here when the app version changes
+     elsewhere. Called every time the About view is opened, same pattern
+     as updateJournalBackupUI() for Settings. */
+  function renderAbout(){
+    const versionEl = document.getElementById('aboutVersion');
+    if(versionEl) versionEl.textContent = CONFIG.version || '—';
+    const nameEl = document.getElementById('aboutAppName');
+    if(nameEl && CONFIG.appTitle) nameEl.textContent = CONFIG.appTitle;
+  }
 
   /* ---------------- stats ---------------- */
   /* Warm words instead of zeros while the journey is still new — the numbers
@@ -1467,15 +1425,8 @@
       Storage.set('journalEntries', []);
       Storage.set('emotionHistory', []);
       Storage.set('versesVisited', 0);
-      // Nothing left to back up, so the pending count resets along with
-      // the journal itself. Last backup date is left untouched — it's
-      // still a true historical fact.
-      const meta = getJournalBackupMeta();
-      meta.backedUpCount = 0;
-      setJournalBackupMeta(meta);
       renderJournal();
       renderStats();
-      updateJournalBackupUI();
     }
   });
 

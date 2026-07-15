@@ -114,6 +114,7 @@
     <button data-view="meditation">Meditation</button>
     <button data-view="stats">Journey</button>
     <button data-view="settings">Settings</button>
+    <button data-view="about">About</button>
   </nav>
   <div id="readingJourney" class="reading-journey" aria-hidden="true">
     <div id="readingJourneyFill" class="reading-journey-fill"></div>
@@ -294,40 +295,6 @@
           </div>
           <button id="replayWelcomeBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Replay</button>
         </div>
-      </div>
-
-      <div class="card" id="journalBackupCard">
-        <div class="setting-row">
-          <div>
-            <div class="setting-label" style="font-size:1.05rem;">Keep Your Reflections Safe</div>
-            <div class="setting-desc">Your reflections stay on this device unless you choose to export them.</div>
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Last backup</div>
-            <div class="setting-desc" id="journalLastBackupValue">Never</div>
-            <p class="setting-desc" id="journalBackupStatus" aria-live="polite" style="margin-top:6px;"></p>
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Export</div>
-            <div class="setting-desc" id="exportJournalDesc">Nothing to export yet.</div>
-          </div>
-          <button id="exportJournalBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Export</button>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Import</div>
-            <div class="setting-desc">Restore a journal you previously exported. This replaces the journal stored on this device.</div>
-          </div>
-          <button id="importJournalBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Import</button>
-          <input type="file" id="importJournalInput" accept="application/json,.json" hidden>
-        </div>
-      </div>
-
-      <div class="card">
         <div class="setting-row">
           <div>
             <div class="setting-label">Clear journal &amp; history</div>
@@ -335,6 +302,87 @@
           </div>
           <button id="clearDataBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Clear</button>
         </div>
+      </div>
+
+      <div class="card" id="journalBackupCard">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label" style="font-size:1.05rem;">Your Journal</div>
+            <div class="setting-desc">Your reflections stay on this device unless you choose to export them.</div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Export Journal</div>
+            <div class="setting-desc" id="exportJournalDesc">Download every entry as a single file, kept only by you.</div>
+          </div>
+          <button id="exportJournalBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Export</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Import Journal</div>
+            <div class="setting-desc">Restore entries from a file you exported earlier — this replaces what's on this device.</div>
+          </div>
+          <button id="importJournalBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Import</button>
+          <input type="file" id="importJournalInput" accept="application/json,.json" hidden>
+        </div>
+        <p class="setting-desc" id="journalBackupStatus" aria-live="polite" style="text-align:center; margin-top:6px;"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="view" id="view-about">
+    <div class="section-shell">
+      <h2>About the Courtyard</h2>
+      <p class="section-sub">A peaceful place to slow down, reflect, and walk through the Bhagavad Gita one verse at a time.</p>
+
+      <div class="verse-frontispiece about-intro">
+        <p>Kanha Ji's Courtyard is a quiet corner for reading and reflecting — built for anyone who needs a place to sit for a while.</p>
+      </div>
+
+      <div class="verse-section">
+        <h4>Application</h4>
+        <p>App name<br><strong id="aboutAppName">Kanha Ji's Courtyard</strong></p>
+        <p>Version<br><span id="aboutVersion">—</span></p>
+        <p>Created by<br><strong>ThatBrownCraft</strong></p>
+        <p class="about-note">Created with love, reflection, and countless cups of chai.</p>
+      </div>
+
+      <div class="verse-section">
+        <h4>About this Project</h4>
+        <p>This Courtyard was never meant to replace scripture. The Bhagavad Gita's original verses remain timeless, exactly as they've always been.</p>
+        <p>What's added here — the translations, the modern reflections, and moments like "If Kanha Ji sat beside you today…" — exist only to help today's reader meet that wisdom in the middle of an ordinary day. The aim is understanding, not replacement.</p>
+      </div>
+
+      <div class="verse-section">
+        <h4>A Small Note</h4>
+        <p>The Bhagavad Gita has guided countless hearts for centuries.</p>
+        <p>This Courtyard simply offers one more quiet place to sit with its wisdom. If even one reflection encourages someone to return to the original scripture, then the Courtyard has already fulfilled its purpose.</p>
+      </div>
+
+      <div class="verse-section">
+        <h4>Copyright &amp; Attribution</h4>
+        <p>The Sanskrit verses of the Bhagavad Gita, and their public-domain translations where used, remain part of the scripture's own cultural and spiritual heritage — they belong to no one and everyone.</p>
+        <p>Everything built around those verses in this Courtyard — the modern reflections, contemporary explanations, historical and contextual commentary, "If Kanha Ji sat beside you today…" passages, reflection questions, journal prompts, the Courtyard's concept and experience, and its original writing, UI, and visual presentation — is original work, © ThatBrownCraft. Please don't copy, republish, or redistribute this writing without permission.</p>
+        <p>Kanha Ji's Courtyard is an independent, personal project made for reflection — it isn't affiliated with any religious organization or institution.</p>
+      </div>
+
+      <div class="verse-section">
+        <h4>Privacy</h4>
+        <p>Your journal stays on this device. Nothing you write is uploaded, tracked, or shared — the only way anything leaves this device is if you choose to export your journal yourself, from Settings.</p>
+      </div>
+
+      <div class="verse-section">
+        <h4>Credits</h4>
+        <p>Built with care, for readers who wanted a peaceful place to keep returning to the Gita.</p>
+      </div>
+
+      <div class="verse-frontispiece about-close">
+        <p class="about-close-line">If these words ever helped you find a little peace, then the Courtyard has already fulfilled its purpose.</p>
+        <p class="about-close-sub">May every visit bring you a little closer to yourself… and to Kanha Ji. 🌿</p>
+        <p class="about-signature">Made with 🤎 by ThatBrownCraft</p>
+        <p class="about-farewell">May you always find your way back to the Courtyard.</p>
       </div>
     </div>
   </section>

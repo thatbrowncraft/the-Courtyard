@@ -50,40 +50,71 @@ sign-in anywhere in the Courtyard, and the Journal doesn't change that.
 Because entries live only in this browser's local storage, clearing your
 site data — or moving to a new phone or computer — will lose them, with no
 way to recover them from anywhere else. To make that a choice rather than
-an accident, Settings has a **Keep Your Reflections Safe** section:
+an accident, Settings has a **Your Journal** section:
 
-- **Last backup** always shows the truth, plainly: "Never," or the date
-  and time you last exported or imported. Right beneath it, a quiet line
-  says exactly where things stand — `🌿 No reflections yet.` if the
-  journal is empty, `🌿 3 reflections haven't been backed up yet.` if
-  you've written since your last export, or `✓ Your journal is safely
-  backed up.` when everything is current. Nothing is ever exported or
-  downloaded automatically — the Courtyard only ever tells you, never
-  acts on its own.
-- **Export** downloads every entry, with its original timestamp, as a
-  single file named like `kanha-ji-journal-2026-07-15.json`. Keep it
+- **Export Journal** downloads every entry, with its original timestamp, as
+  a single file named like `kanha-ji-journal-2026-07-15.json`. Keep it
   wherever you'd keep any personal file — this app never sees it again
-  unless you bring it back. After a successful export, the status line
-  briefly says `🌿 Your reflections have been safely packed.`
-- **Import** lets you choose a previously exported file and restore it.
-  You'll be asked to confirm first, since importing replaces whatever
-  journal is currently on this device. If the file isn't a valid
-  Courtyard backup, you'll see a plain explanation instead of an error —
-  nothing breaks, and nothing on the device changes. A successful import
-  counts as a backup too, since the file you just restored from is one.
+  unless you bring it back.
+- **Import Journal** lets you choose a previously exported file and restore
+  it. You'll be asked to confirm first, since importing replaces whatever
+  journal is currently on this device. If the file isn't a valid Courtyard
+  backup, you'll see a plain explanation instead of an error — nothing
+  breaks, and nothing on the device changes.
 
 If you haven't written anything yet, Export stays disabled with a note
 that there's nothing to export.
 
-Under the hood, this only adds one small piece of local storage — a
-timestamp for the last backup, and a count of how many entries were in it
-at the time. Everything else (whether there's anything "pending") is
-worked out from that on the fly, so clearing your journal, exporting, or
-importing always leaves the status telling the truth.
-
 This is a manual, one-file, one-device-to-another process — there is no
 automatic sync, no cloud storage, and no account behind it. That's
 intentional.
+
+---
+
+## Navigation, and the About page
+
+The header (brand mark, nav links) stays fixed at the top of the screen as
+you scroll — it was already built this way (a `position: sticky` header)
+— and now stays visible on every screen, including while reading a single
+verse. Only the sound control recedes there, so the reading itself still
+gets the quiet, uncluttered focus that was intended; the way back to the
+rest of the Courtyard never disappears now, since readers move between
+Chapters, Journal, Search, and everywhere else often enough mid-read that
+hiding the nav there was more friction than atmosphere.
+
+**About** is a new entry in that nav, alongside Home, Chapters, Search,
+Collections, Journal, Meditation, Journey, and Settings. It's a read-only
+page — no Storage, no settings to change — split into a few quiet sections,
+meant to read like chapters of the same book rather than a settings screen:
+
+- **Application** — app name, the current version (read live from
+  `config.json`, so it never needs hand-editing here when the version
+  bumps), and who made it.
+- **About this Project** — a short, plain explanation that the Courtyard
+  is a companion to the Gita, not a replacement for it.
+- **A Small Note** — a brief, warm reminder that the Gita itself is the
+  point; the Courtyard is only one more quiet place to sit with it, and
+  is glad to be left behind the moment someone picks up the original.
+- **Copyright & Attribution** — the original Sanskrit verses and public-
+  domain translations remain part of the scripture's own heritage. The
+  reflections, modern interpretations, historical/contextual commentary,
+  "If Kanha Ji sat beside you today…" passages, reflection questions,
+  journal prompts, the Courtyard's own concept, experience, UI, and
+  original writing are original work, © ThatBrownCraft. Written warmly,
+  not like legal boilerplate — see `index.html`'s `#view-about` if you
+  want the exact wording.
+- **Privacy** — a one-line reminder of what's already true elsewhere in
+  this README: journal entries stay on-device and are never uploaded,
+  tracked, or shared unless you export them yourself.
+- **Credits**, and a closing signoff at the bottom of the page — a short
+  farewell, a "Made with 🤎" signature, and one last, smaller line
+  underneath it, meant to feel like the quiet last page of a book rather
+  than a settings screen or a piece of documentation.
+
+Nothing about routing, caching, or offline support changed to add this —
+About is just another `KNOWN_SIMPLE_VIEWS` entry, same as Journal or
+Settings, and its markup, styling, and file list were already precached
+by the existing service worker.
 
 ---
 

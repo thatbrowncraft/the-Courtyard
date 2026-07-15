@@ -686,8 +686,6 @@
   .setting-row:last-child{ border-bottom:none; }
   .setting-label{ font-size:0.98rem; font-family:'Cormorant Garamond',serif; font-style:italic; }
   .setting-desc{ font-size:0.8rem; color:var(--ivory-faint); margin-top:4px; }
-  /* ---------- journal backup (export / import) ---------- */
-  #exportJournalBtn:disabled{ opacity:0.4; cursor:not-allowed; }
   .switch{ width:38px; height:20px; border-radius:0; background:transparent; border:1px solid var(--line); position:relative; cursor:pointer; transition:border-color 0.3s var(--ease); }
   .switch.on{ border-color:var(--gold-soft); }
   .switch::after{ content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:0; background:var(--ivory-faint); transition:transform 0.3s var(--ease), background 0.3s var(--ease); }
@@ -711,9 +709,12 @@
   footer{ text-align:center; padding:32px; font-size:0.76rem; font-style:italic; font-family:'Cormorant Garamond',serif; color:var(--ivory-faint); }
 
   /* ---------- reading mode: opening a sacred book ----------
-     When a verse is open, the chrome recedes — only the back button and the
-     verse itself remain. Everything fades back in on the way out. */
-  body.reading-mode header,
+     When a verse is open, the sound control recedes so nothing but the
+     back button and the verse itself compete for attention. The header
+     (and its nav) used to fade out here too, but readers move between
+     Chapters/Journal/Search/etc. often enough mid-read that hiding the
+     only way back was more friction than atmosphere — so the header now
+     stays put, same as every other view. */
   body.reading-mode #soundControl{
     opacity:0; pointer-events:none; transition:opacity 0.6s ease;
   }
@@ -861,3 +862,40 @@
   border-top:1px solid var(--line-soft);
 }
 .verse-nav-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+/* ---------- About page ----------
+   Appended without touching any rule above. Reuses .section-shell,
+   .verse-frontispiece, and .verse-section wholesale — the same
+   scaffolding the verse-detail page already uses to read like sections
+   of a printed page — so the About page needs almost no styling of its
+   own. Only the intro line and the closing signoff get dedicated rules,
+   since those two moments are meant to feel like the opening and closing
+   page of a book rather than another settings-style list. */
+.about-intro p{
+  font-family:'Cormorant Garamond', serif; font-style:italic;
+  font-size:1.15rem; line-height:1.85; color:var(--ivory-dim);
+  max-width:520px; margin:0 auto;
+}
+.verse-section .about-note{
+  font-style:italic; color:var(--ivory-faint); font-size:0.98rem;
+}
+.about-close{
+  border-bottom:none; border-top:1px solid var(--line);
+  padding:44px 0 8px; margin-top:8px;
+}
+.about-close-line{
+  font-family:'Cormorant Garamond', serif; font-style:italic;
+  font-size:1.2rem; line-height:1.8; color:var(--ivory);
+  max-width:480px; margin:0 auto;
+}
+.about-close-sub{
+  color:var(--ivory-faint); font-size:0.98rem; margin-top:18px;
+}
+.about-signature{
+  color:var(--ivory-faint); font-size:0.78rem; letter-spacing:0.05em;
+  margin-top:34px;
+}
+.about-farewell{
+  color:var(--ivory-faint); font-size:0.72rem; font-style:italic;
+  opacity:0.75; margin-top:10px;
+}

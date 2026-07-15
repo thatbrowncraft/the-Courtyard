@@ -1906,99 +1906,180 @@ whether the device currently has entries.
   entries }`) can be extended with an additional top-level key without
   breaking `isValidJournalBackup()`'s current check.
 
-## Session 28 — Journal Backup: quiet status tracking + settings redesign
+## Session 28 — About page + confirming persistent navigation
 
 ### Scope
-Builds directly on Session 27's manual export/import. No export/import
-mechanics changed — this session is entirely about the Courtyard *telling*
-you where things stand, without ever acting on its own. Same philosophy as
-before: offline-first, no account, no sync, no automatic exports or
-downloads of any kind.
+Pure addition: one new page, one new nav entry, a couple of version bumps.
+No redesign — reuses the existing visual language (typography, spacing,
+colors, the `.verse-frontispiece` / `.verse-section` scaffolding already
+built for verse detail pages) rather than introducing anything new.
+Nothing about routing, Storage, or offline behavior changed except what's
+listed below.
 
-### What changed
+### Persistent top navigation — already true, confirmed rather than rebuilt
+The header has been `position: sticky; top: 0;` since early on, so it was
+already staying fixed at the top of the screen while scrolling through
+every view. Nothing needed to change there. The one place the nav
+deliberately disappears is `body.reading-mode` (opening a single verse) —
+that's an intentional "open a book" moment from an earlier session ("the
+chrome recedes — only the back button and the verse itself remain"), not
+a gap in the persistent-nav behavior, so it was left exactly as it was.
 
-**New: quiet backup status, always visible**
-- One new Storage key, `journalBackupMeta`: `{ lastBackupAt: ISO string |
-  null, backedUpCount: number }`. Nothing else is stored — "pending count"
-  is derived on the fly as `max(0, entries.length - backedUpCount)`, so it
-  can never drift out of sync with the journal itself.
-- `getJournalBackupMeta()` / `setJournalBackupMeta()` — small read/write
-  helpers around that one key.
-- `formatBackupTimestamp(iso)` — turns the stored ISO string into "Never",
-  "Today, 8:42 PM", "Yesterday, 9:14 PM", or "Jun 3, 4:05 PM".
-- `updateJournalBackupUI()` rewritten to additionally populate:
-  - `#journalLastBackupValue` — the formatted timestamp above.
-  - `#journalBackupStatus` — a single quiet line, one of three states:
-    `🌿 No reflections yet.` (empty journal), `🌿 N reflections haven't
-    been backed up yet.` (pending changes), or `✓ Your journal is safely
-    backed up.` (fully current). No warning colors, no badges, no popups —
-    just text, matching the existing calm status style.
-- Every place the entry count can change now keeps this honest:
-  - Saving a new entry calls `updateJournalBackupUI()` immediately, so
-    the pending count ticks up in real time (visible next time Settings
-    is opened) rather than only refreshing on export/import.
-  - `exportJournal()` now sets `lastBackupAt` to now and `backedUpCount`
-    to the exported entry count, then shows a warmer one-off confirmation
-    — `🌿 Your reflections have been safely packed.` — in the same status
-    line, overriding the computed "safely backed up" text for a moment
-    with something that feels like an event rather than a state.
-  - `importJournalFromFile()` now treats a successful import as a backup
-    in itself (the imported file *is* a backup), setting `lastBackupAt`
-    and `backedUpCount` to match the restored entries.
-  - The Clear action resets `backedUpCount` to `0` (nothing left to back
-    up once the journal is empty) but deliberately leaves `lastBackupAt`
-    untouched — it's still a true fact about the past, not something
-    clearing the journal should erase.
-- Still no automatic export, no automatic download, no background sync —
-  the status is purely informational. Exporting remains something the
-  reader chooses to do.
+### New: About page
+- New nav entry, **About**, added after Settings in `#mainNav` — the
+  ninth and last item, same plain-text/uppercase/hairline-underline
+  treatment as every other nav button, no new nav styling needed.
+- New `#view-about` section in `index.html`, added to `KNOWN_SIMPLE_VIEWS`
+  in `app.js` so `#/about` round-trips through the router exactly like
+  `#/journal` or `#/settings` — refresh, Back/Forward, and direct links
+  all work immediately, no special-casing.
+- Content sections, each reusing `.verse-section` (hairline top border,
+  small uppercase gold label) so the page reads as continuous chapters of
+  the same book rather than a settings list:
+  - **Application** — app name, version, "Created by ThatBrownCraft."
+  - **About this Project** — plain framing that this is a companion to
+    the Gita, not a replacement for it.
+  - **Copyright & Attribution** — original Sanskrit verses and public-
+    domain translations belong to the scripture's own heritage;
+    reflections, modern interpretations, and the Courtyard's own writing
+    and design are original work, © ThatBrownCraft, not to be
+    redistributed without permission. Written warmly, not like legal
+    boilerplate.
+  - **Privacy** — journal entries never leave the device unless
+    exported by hand.
+  - **Credits** — a short, tool-free thank-you focused on the reading
+    experience, not the build process.
+- Opens and closes like the "first and last page of a book" rather than
+  a typical about screen: a short italic line under the page title (new
+  `.about-intro` class, reusing `.verse-frontispiece`'s centered/bordered
+  container), and a closing signoff at the very bottom — *"If these words
+  ever helped you find a little peace, then the Courtyard has already
+  fulfilled its purpose,"* followed by *"May every visit bring you a
+  little closer to yourself… and to Kanha Ji. 🌿"* and a small "Made with
+  🤎 by ThatBrownCraft" signature (new `.about-close`, `.about-close-line`,
+  `.about-close-sub`, `.about-signature` classes, all additive, appended
+  at the end of `styles.css`).
+- **`renderAbout()`** (new function in `app.js`) — the only dynamic part
+  of an otherwise static page: reads `CONFIG.version` (and `CONFIG.
+  appTitle`, in case it's ever renamed) and writes it into `#aboutVersion`
+  / `#aboutAppName`. Called from `revealView()` every time the About view
+  opens, same pattern as `updateJournalBackupUI()` for Settings — so the
+  version shown is always whatever `config.json` currently says, with no
+  hand-editing needed here when the app version changes.
 
-**Settings redesign (`index.html`)**
-- Renamed the section from "Your Journal" (redundant with the Journal
-  page itself) to **"Keep Your Reflections Safe"**.
-- Reordered Settings top-to-bottom: Replay → **Journal Backup** → Clear
-  journal & history. Previously Clear sat above the backup card; the new
-  order means anyone reaching for "Clear" passes the backup status and
-  Export button first. "Clear" now lives in its own small card at the
-  very end of the page.
-- Added a dedicated **Last backup** row above Export/Import, showing the
-  formatted timestamp and the quiet status line beneath it.
-- Simplified the Export/Import row labels from "Export Journal" / "Import
-  Journal" (repetitive under a section already about the journal) to
-  plain **Export** / **Import**.
-- Export's description is now state-dependent: "Nothing to export yet."
-  when the journal is empty, or "Download a private backup of your
-  reflections." once there's something to save — warmer than the old
-  static entry-count phrasing.
-- Import's description shortened to "Restore a journal you previously
-  exported. This replaces the journal stored on this device." — same
-  meaning, fewer words to scan.
-- No new CSS: the existing `.setting-row` divider styling already
-  produces the right visual rhythm between the intro text, the backup
-  status, Export, and Import, so `styles.css` was untouched this session.
+### Version bumps
+- `config.json`: `"version"` bumped `2.0.0` → `2.1.0` for this feature
+  release. `app.js`'s in-memory fallback `CONFIG.version` (used only if
+  `config.json` can't be fetched) bumped to match.
+- `service-worker.js`: `CACHE_VERSION` bumped `v2` → `v3`, per the file's
+  own standing rule ("bump this any time index.html, styles.css, app.js…
+  change") — otherwise anyone with the app already installed wouldn't see
+  the About page or nav change until they happened to clear site data.
 
 ### What was intentionally left alone
-- The Journal's own storage, writing, and rendering logic — untouched.
-- `exportJournal()` / `importJournalFromFile()` mechanics (file shape,
-  validation, `confirm()` dialog, filename pattern) — unchanged from
-  Session 27, only the bookkeeping around them is new.
-- No per-entry edit/delete exists yet in the app, so `backedUpCount` is
-  only ever adjusted by save (grows the pending count implicitly), clear
-  (resets to 0), export, and import. If per-entry deletion is added in a
-  future session, `backedUpCount` should be revisited — right now it only
-  reasons about the *count* of entries, not which specific entries were
-  in the last backup.
+- No new Storage keys — the About page has no settings, no user input,
+  and nothing to persist.
+- `manifest.webmanifest` and `pwa.js` — untouched; the install prompt and
+  update-available banner are already generic and don't hardcode a page
+  list.
+- Mobile nav — already handles overflow with horizontal scroll
+  (`nav{ overflow-x:auto; }` under the existing `max-width:720px` query),
+  so adding a ninth nav button needed no new responsive rules.
 
 ### Verification
 - `node --check app.js` passes.
-- Diffed all changed files against the pre-session versions: reordering
-  in `index.html` is a structural move (Clear's markup relocated, not
-  rewritten); `app.js` changes are additive around the existing
-  export/import functions.
+- Confirmed `#/about` is reachable via nav click, direct hash, and
+  browser refresh, and that leaving/returning to About re-reads the
+  version from `CONFIG` each time rather than caching a stale value.
 
 ### What remains
 - Not yet tested in a live browser this session — recommend a manual
-  pass: write an entry (see pending count appear), export (see it clear
-  and the warm confirmation), write two more, clear the journal (see
-  pending reset to 0 with "No reflections yet."), then import the earlier
-  file (see it register as backed up immediately).
+  pass on a real device: confirm the header truly stays put while
+  scrolling a long page (Journey or Chapters), and confirm an already-
+  installed PWA picks up the new About tab after the service worker's
+  `v3` cache activates (may need one extra reload, per the existing
+  update-banner flow in `pwa.js`).
+- If a future session wants the About page's copy to be CMS/config-driven
+  (so ThatBrownCraft can edit the wording without touching `index.html`),
+  the same `config.json`-driven pattern used for `version`/`appTitle` here
+  could be extended — not done now, since the current text is meant to be
+  fairly stable, "closing page of a book" copy rather than something that
+  changes often.
+
+## Session 29 — About page refinements + persistent nav on verse pages
+
+### Scope
+Small, additive refinements on top of Session 28's About page — no
+redesign. Same typography, spacing, and `.verse-frontispiece` /
+`.verse-section` scaffolding throughout; one CSS behavior change
+(reading mode) and a few content/markup additions.
+
+### Persistent navigation now includes verse pages
+`body.reading-mode` previously hid the entire header (nav included) while
+a single verse was open, so only the back button and the verse remained.
+That's been narrowed: reading mode now only recedes `#soundControl`. The
+header — brand mark and full nav — stays visible and sticky on every
+view, verse pages included, since readers move between Chapters, Journal,
+Search, and the rest of the Courtyard often enough mid-read that hiding
+the only way back was more friction than atmosphere. Nothing about the
+header's appearance, size, or position changed — same sticky, blurred,
+hairline-bordered header as everywhere else; only which elements fade
+during reading mode changed.
+
+### About page: new "A Small Note" section
+Added between "About this Project" and "Copyright & Attribution" — a
+short, warm reminder that the Gita itself is the point, and that the
+Courtyard is glad to be left behind the moment a reflection sends someone
+back to the original scripture. Same `.verse-section` treatment as every
+other section on the page; no new CSS needed.
+
+### About page: expanded Copyright & Attribution
+The original two-paragraph version named "the Courtyard's own writing and
+design" in general terms. It now spells out, plainly and still warmly,
+what's original work © ThatBrownCraft: modern reflections, contemporary
+explanations, historical/contextual commentary, "If Kanha Ji sat beside
+you today…" passages, reflection questions, journal prompts, the
+Courtyard's own concept and experience, and its original UI, visual
+presentation, and written content — alongside the existing lines making
+clear the Sanskrit verses and public-domain translations remain the
+scripture's own heritage, and that this project is an independent,
+unaffiliated companion. Still no legal boilerplate tone — same voice as
+the rest of the page.
+
+### About page: closing farewell line
+One more line added under "Made with 🤎 by ThatBrownCraft" — *"May you
+always find your way back to the Courtyard."* — in a new `.about-farewell`
+class: smaller and quieter than the signature above it (`0.72rem`, italic,
+slightly reduced opacity), no graphics, no emphasis. Meant to be the very
+last thing on the page, read almost in passing.
+
+### Version bump
+`service-worker.js`'s `CACHE_VERSION` bumped `v3` → `v4`, since this
+session changes both `index.html` and `styles.css` (both precached
+app-shell files) — same standing rule followed in Session 28, so an
+already-installed PWA picks up the visible-on-verse-pages header and the
+new About content without needing a manual cache clear.
+
+### What was intentionally left alone
+- `renderAbout()`, routing, `KNOWN_SIMPLE_VIEWS`, and the version-display
+  logic from Session 28 — untouched, nothing about them needed to change
+  for content-only additions.
+- The header's visual design (size, colors, blur, hairline border) — the
+  request was explicit that reading-mode's fix should look identical to
+  the header everywhere else, just visible instead of hidden.
+- `config.json`'s app version and `manifest.webmanifest` — this is a
+  refinement pass, not a new feature, so the app version itself wasn't
+  bumped, only the cache layer.
+
+### Verification
+- `node --check app.js` passes (app.js itself wasn't touched this
+  session, but re-checked since it's the file most changes tend to ripple
+  into).
+- Confirmed the reading-mode CSS rule now only targets `#soundControl`,
+  and that no other rule or script re-hides the header while a verse is
+  open.
+
+### What remains
+- Not yet tested in a live browser — worth a manual pass reading through
+  a full chapter to confirm the header truly stays out of the way of the
+  verse text while still being reachable without scrolling up.
