@@ -1130,8 +1130,15 @@
       nextBtn.textContent = 'Next Verse →';
       nextBtn.dataset.action = 'next-verse';
       nextBtn.style.display = '';
+    } else if(chapterNumber === FINAL_CHAPTER_NUMBER){
+      // Final verse of the final chapter: offer a graceful way back to
+      // Home alongside the chapter-completion card, instead of hiding
+      // the button as happens for every other chapter's final verse.
+      nextBtn.textContent = '🏡 Back to Home';
+      nextBtn.dataset.action = 'back-home';
+      nextBtn.style.display = '';
     } else {
-      // Final verse of the chapter: no Next Chapter / Return Home here.
+      // Final verse of chapters 1–17: no Next Chapter / Return Home here.
       // The chapter-completion card below is the only way to continue —
       // this avoids a duplicate action and preserves that reflective pause.
       nextBtn.style.display = 'none';
@@ -1149,8 +1156,11 @@
   });
 
   document.getElementById('nextVerseBtn')?.addEventListener('click', (e)=>{
-    if(e.currentTarget.dataset.action === 'next-verse'){
+    const action = e.currentTarget.dataset.action;
+    if(action === 'next-verse'){
       setRoute({ view: 'verse', chapter: currentChapterNumber, verse: currentVerseNumber + 1 });
+    } else if(action === 'back-home'){
+      setRoute({ view: 'home' });
     }
   });
 
