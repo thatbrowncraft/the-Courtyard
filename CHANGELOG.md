@@ -1905,3 +1905,100 @@ whether the device currently has entries.
   same backup file, this export shape (`{ app, appVersion, exportedAt,
   entries }`) can be extended with an additional top-level key without
   breaking `isValidJournalBackup()`'s current check.
+
+## Session 28 — Journal Backup: quiet status tracking + settings redesign
+
+### Scope
+Builds directly on Session 27's manual export/import. No export/import
+mechanics changed — this session is entirely about the Courtyard *telling*
+you where things stand, without ever acting on its own. Same philosophy as
+before: offline-first, no account, no sync, no automatic exports or
+downloads of any kind.
+
+### What changed
+
+**New: quiet backup status, always visible**
+- One new Storage key, `journalBackupMeta`: `{ lastBackupAt: ISO string |
+  null, backedUpCount: number }`. Nothing else is stored — "pending count"
+  is derived on the fly as `max(0, entries.length - backedUpCount)`, so it
+  can never drift out of sync with the journal itself.
+- `getJournalBackupMeta()` / `setJournalBackupMeta()` — small read/write
+  helpers around that one key.
+- `formatBackupTimestamp(iso)` — turns the stored ISO string into "Never",
+  "Today, 8:42 PM", "Yesterday, 9:14 PM", or "Jun 3, 4:05 PM".
+- `updateJournalBackupUI()` rewritten to additionally populate:
+  - `#journalLastBackupValue` — the formatted timestamp above.
+  - `#journalBackupStatus` — a single quiet line, one of three states:
+    `🌿 No reflections yet.` (empty journal), `🌿 N reflections haven't
+    been backed up yet.` (pending changes), or `✓ Your journal is safely
+    backed up.` (fully current). No warning colors, no badges, no popups —
+    just text, matching the existing calm status style.
+- Every place the entry count can change now keeps this honest:
+  - Saving a new entry calls `updateJournalBackupUI()` immediately, so
+    the pending count ticks up in real time (visible next time Settings
+    is opened) rather than only refreshing on export/import.
+  - `exportJournal()` now sets `lastBackupAt` to now and `backedUpCount`
+    to the exported entry count, then shows a warmer one-off confirmation
+    — `🌿 Your reflections have been safely packed.` — in the same status
+    line, overriding the computed "safely backed up" text for a moment
+    with something that feels like an event rather than a state.
+  - `importJournalFromFile()` now treats a successful import as a backup
+    in itself (the imported file *is* a backup), setting `lastBackupAt`
+    and `backedUpCount` to match the restored entries.
+  - The Clear action resets `backedUpCount` to `0` (nothing left to back
+    up once the journal is empty) but deliberately leaves `lastBackupAt`
+    untouched — it's still a true fact about the past, not something
+    clearing the journal should erase.
+- Still no automatic export, no automatic download, no background sync —
+  the status is purely informational. Exporting remains something the
+  reader chooses to do.
+
+**Settings redesign (`index.html`)**
+- Renamed the section from "Your Journal" (redundant with the Journal
+  page itself) to **"Keep Your Reflections Safe"**.
+- Reordered Settings top-to-bottom: Replay → **Journal Backup** → Clear
+  journal & history. Previously Clear sat above the backup card; the new
+  order means anyone reaching for "Clear" passes the backup status and
+  Export button first. "Clear" now lives in its own small card at the
+  very end of the page.
+- Added a dedicated **Last backup** row above Export/Import, showing the
+  formatted timestamp and the quiet status line beneath it.
+- Simplified the Export/Import row labels from "Export Journal" / "Import
+  Journal" (repetitive under a section already about the journal) to
+  plain **Export** / **Import**.
+- Export's description is now state-dependent: "Nothing to export yet."
+  when the journal is empty, or "Download a private backup of your
+  reflections." once there's something to save — warmer than the old
+  static entry-count phrasing.
+- Import's description shortened to "Restore a journal you previously
+  exported. This replaces the journal stored on this device." — same
+  meaning, fewer words to scan.
+- No new CSS: the existing `.setting-row` divider styling already
+  produces the right visual rhythm between the intro text, the backup
+  status, Export, and Import, so `styles.css` was untouched this session.
+
+### What was intentionally left alone
+- The Journal's own storage, writing, and rendering logic — untouched.
+- `exportJournal()` / `importJournalFromFile()` mechanics (file shape,
+  validation, `confirm()` dialog, filename pattern) — unchanged from
+  Session 27, only the bookkeeping around them is new.
+- No per-entry edit/delete exists yet in the app, so `backedUpCount` is
+  only ever adjusted by save (grows the pending count implicitly), clear
+  (resets to 0), export, and import. If per-entry deletion is added in a
+  future session, `backedUpCount` should be revisited — right now it only
+  reasons about the *count* of entries, not which specific entries were
+  in the last backup.
+
+### Verification
+- `node --check app.js` passes.
+- Diffed all changed files against the pre-session versions: reordering
+  in `index.html` is a structural move (Clear's markup relocated, not
+  rewritten); `app.js` changes are additive around the existing
+  export/import functions.
+
+### What remains
+- Not yet tested in a live browser this session — recommend a manual
+  pass: write an entry (see pending count appear), export (see it clear
+  and the warm confirmation), write two more, clear the journal (see
+  pending reset to 0 with "No reflections yet."), then import the earlier
+  file (see it register as backed up immediately).

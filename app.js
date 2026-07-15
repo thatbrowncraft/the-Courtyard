@@ -1224,6 +1224,7 @@
     Storage.set('journalEntries', entries);
     input.value = '';
     renderJournal();
+    updateJournalBackupUI();
     tuneDiya();
     whisper("I'll keep this here for you.");
   });
@@ -1234,21 +1235,64 @@
      Storage keys, nothing local becomes non-local. This is the only way
      journal entries survive a cleared cache or a move to a new device,
      while keeping the Journal itself untouched: offline-first, account-
-     free, never synced, never tracked. */
+     free, never synced, never tracked.
 
-  // Keeps the Export button (and its description) honest about whether
-  // there's anything to export — called whenever Settings is opened, and
-  // after anything that can change the entry count (save, import, clear).
+     The Courtyard never exports on its own — it only remembers, quietly,
+     whether the reflections on this device have made it into a backup
+     yet, and says so plainly. `journalBackupMeta` is the only new Storage
+     key: { lastBackupAt: ISO string | null, backedUpCount: number }.
+     Pending count is derived, not stored separately — it's simply how
+     many entries exist beyond `backedUpCount`, clamped at 0 so a cleared
+     journal (or an older backup with more entries than exist now) never
+     reads as a negative number. */
+
+  function getJournalBackupMeta(){
+    return Storage.get('journalBackupMeta', { lastBackupAt: null, backedUpCount: 0 });
+  }
+  function setJournalBackupMeta(meta){
+    Storage.set('journalBackupMeta', meta);
+  }
+
+  // "Today, 8:42 PM" / "Yesterday, 9:14 PM" / "Jun 3, 4:05 PM" / "Never"
+  function formatBackupTimestamp(iso){
+    if(!iso) return 'Never';
+    const d = new Date(iso);
+    const now = new Date();
+    const startOfDay = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+    const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if(diffDays === 0) return `Today, ${time}`;
+    if(diffDays === 1) return `Yesterday, ${time}`;
+    return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
+  }
+
+  // Keeps the Export button, its description, the "Last backup" line, and
+  // the quiet status line honest — called whenever Settings is opened,
+  // and after anything that changes the entry count (save, import, clear).
   function updateJournalBackupUI(){
     const entries = Storage.get('journalEntries', []);
+    const meta = getJournalBackupMeta();
+    const pending = Math.max(0, entries.length - (meta.backedUpCount || 0));
+
     const exportBtn = document.getElementById('exportJournalBtn');
     const exportDesc = document.getElementById('exportJournalDesc');
     if(!exportBtn || !exportDesc) return;
+
     const empty = entries.length === 0;
     exportBtn.disabled = empty;
     exportDesc.textContent = empty
-      ? 'Nothing to export yet — write something first.'
-      : `Download all ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} as a single file, kept only by you.`;
+      ? 'Nothing to export yet.'
+      : 'Download a private backup of your reflections.';
+
+    const lastBackupEl = document.getElementById('journalLastBackupValue');
+    if(lastBackupEl) lastBackupEl.textContent = formatBackupTimestamp(meta.lastBackupAt);
+
+    const statusEl = document.getElementById('journalBackupStatus');
+    if(statusEl){
+      if(empty) statusEl.textContent = '🌿 No reflections yet.';
+      else if(pending > 0) statusEl.textContent = `🌿 ${pending} ${pending === 1 ? 'reflection hasn\u2019t' : 'reflections haven\u2019t'} been backed up yet.`;
+      else statusEl.textContent = '✓ Your journal is safely backed up.';
+    }
   }
 
   function setJournalBackupStatus(text){
@@ -1275,7 +1319,13 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setJournalBackupStatus(`Saved ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} to your device.`);
+
+    const meta = getJournalBackupMeta();
+    meta.lastBackupAt = new Date().toISOString();
+    meta.backedUpCount = entries.length;
+    setJournalBackupMeta(meta);
+    updateJournalBackupUI();
+    setJournalBackupStatus('🌿 Your reflections have been safely packed.');
   }
 
   // A backup is considered valid if it has the shape exportJournal() produces:
@@ -1304,6 +1354,12 @@
       }
       if(!confirm('Importing will replace the journal currently stored on this device. Continue?')) return;
       Storage.set('journalEntries', data.entries);
+      // An imported journal is, by definition, already backed up somewhere —
+      // this file is that backup.
+      const meta = getJournalBackupMeta();
+      meta.lastBackupAt = new Date().toISOString();
+      meta.backedUpCount = data.entries.length;
+      setJournalBackupMeta(meta);
       renderJournal();
       renderStats();
       updateJournalBackupUI();
@@ -1411,8 +1467,15 @@
       Storage.set('journalEntries', []);
       Storage.set('emotionHistory', []);
       Storage.set('versesVisited', 0);
+      // Nothing left to back up, so the pending count resets along with
+      // the journal itself. Last backup date is left untouched — it's
+      // still a true historical fact.
+      const meta = getJournalBackupMeta();
+      meta.backedUpCount = 0;
+      setJournalBackupMeta(meta);
       renderJournal();
       renderStats();
+      updateJournalBackupUI();
     }
   });
 

@@ -50,20 +50,36 @@ sign-in anywhere in the Courtyard, and the Journal doesn't change that.
 Because entries live only in this browser's local storage, clearing your
 site data — or moving to a new phone or computer — will lose them, with no
 way to recover them from anywhere else. To make that a choice rather than
-an accident, Settings has a **Your Journal** section:
+an accident, Settings has a **Keep Your Reflections Safe** section:
 
-- **Export Journal** downloads every entry, with its original timestamp, as
-  a single file named like `kanha-ji-journal-2026-07-15.json`. Keep it
+- **Last backup** always shows the truth, plainly: "Never," or the date
+  and time you last exported or imported. Right beneath it, a quiet line
+  says exactly where things stand — `🌿 No reflections yet.` if the
+  journal is empty, `🌿 3 reflections haven't been backed up yet.` if
+  you've written since your last export, or `✓ Your journal is safely
+  backed up.` when everything is current. Nothing is ever exported or
+  downloaded automatically — the Courtyard only ever tells you, never
+  acts on its own.
+- **Export** downloads every entry, with its original timestamp, as a
+  single file named like `kanha-ji-journal-2026-07-15.json`. Keep it
   wherever you'd keep any personal file — this app never sees it again
-  unless you bring it back.
-- **Import Journal** lets you choose a previously exported file and restore
-  it. You'll be asked to confirm first, since importing replaces whatever
-  journal is currently on this device. If the file isn't a valid Courtyard
-  backup, you'll see a plain explanation instead of an error — nothing
-  breaks, and nothing on the device changes.
+  unless you bring it back. After a successful export, the status line
+  briefly says `🌿 Your reflections have been safely packed.`
+- **Import** lets you choose a previously exported file and restore it.
+  You'll be asked to confirm first, since importing replaces whatever
+  journal is currently on this device. If the file isn't a valid
+  Courtyard backup, you'll see a plain explanation instead of an error —
+  nothing breaks, and nothing on the device changes. A successful import
+  counts as a backup too, since the file you just restored from is one.
 
 If you haven't written anything yet, Export stays disabled with a note
 that there's nothing to export.
+
+Under the hood, this only adds one small piece of local storage — a
+timestamp for the last backup, and a count of how many entries were in it
+at the time. Everything else (whether there's anything "pending") is
+worked out from that on the fly, so clearing your journal, exporting, or
+importing always leaves the status telling the truth.
 
 This is a manual, one-file, one-device-to-another process — there is no
 automatic sync, no cloud storage, and no account behind it. That's
