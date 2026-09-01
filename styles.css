@@ -16,6 +16,19 @@
     --breeze: 0;
     --jitter: 0;
     --diya-glow: 0.5;
+
+    /* Mobile-viewport fix: single source of truth for "the real, currently
+       visible viewport height." Defaults to 100vh, so every browser that
+       doesn't understand dvh renders exactly as before (zero behavior
+       change). Browsers that DO support dvh get it overridden below via
+       @supports, so body/main/#arrival track the actual visible viewport
+       as Android Chrome's toolbar shows/hides, instead of the classic
+       100vh-vs-real-viewport mismatch. This does not blindly replace every
+       vh in the file — only the three rules below that reference it. */
+    --vh-100: 100vh;
+  }
+  @supports (height: 100dvh){
+    :root{ --vh-100: 100dvh; }
   }
   /* ---------- theme variants: same tokens, three different lights ----------
      "Dusk" is the default palette above (no attribute needed). Night and dawn
@@ -45,7 +58,7 @@
   }
   body{
     margin:0;
-    min-height:100vh;
+    min-height:var(--vh-100);
     background:
       radial-gradient(ellipse 70% 45% at 50% -8%, rgba(192,138,62,0.08), transparent),
       radial-gradient(ellipse 55% 42% at 88% 102%, rgba(255,180,99,0.06), transparent),
@@ -116,6 +129,15 @@
   /* ================= ARRIVAL RITUAL ================= */
   #arrival{
     position:fixed; inset:0; z-index:200;
+    /* Explicit height (on top of inset:0) so this full-screen ritual overlay
+       tracks the real, currently-visible viewport rather than whatever
+       height the browser implicitly derives for a fixed element's
+       containing block — the two can disagree on Android Chrome while the
+       toolbar is animating in/out. top:0 (from inset:0 above) + this
+       explicit height together fully determine the box; per CSS's
+       over-constrained resolution, the redundant bottom:0 from inset:0 is
+       simply ignored rather than fighting this value. */
+    height:var(--vh-100);
     background:
       radial-gradient(ellipse 80% 55% at 50% 32%, rgba(224,174,100,0.10), transparent),
       linear-gradient(180deg,#170F09,#2A1C11 55%,#34240F);
@@ -473,7 +495,7 @@
   nav button.active::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--gold); }
   #nav-toggle{ display:none; }
 
-  main{ position:relative; z-index:10; min-height:calc(100vh - 70px); }
+  main{ position:relative; z-index:10; min-height:calc(var(--vh-100) - 70px); }
   .view{ display:none; opacity:0; animation: viewIn 0.9s var(--ease) forwards; }
   .view.active{ display:block; }
   @keyframes viewIn{ from{ opacity:0; } to{ opacity:1; } }
