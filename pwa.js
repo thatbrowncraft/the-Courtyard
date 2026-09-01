@@ -10,6 +10,50 @@
 (function () {
   'use strict';
 
+  /* ---------------- standalone-PWA viewport correction ----------------
+     Installed-app-only counter-correction for a specific Chrome bug: if
+     "Request desktop site" is (or ever was) turned on for this origin,
+     Chrome can force the page's *layout* viewport to ~980px CSS px on an
+     installed Android home-screen launch, regardless of the page's own
+     <meta name="viewport">, and then auto-scale that 980px layout down to
+     fit the real screen. The html.pwa-standalone mobile-lock rules in
+     styles.css still apply correctly either way — they key off the class,
+     never off width — but the whole page can end up rendering shrunk down
+     to a fraction of its intended size, which looks exactly like "stuck in
+     desktop mode" even though the mobile CSS is technically active.
+
+     window.visualViewport.scale is Chrome's own report of that auto-fit
+     ratio, so the fix is a counter-zoom of 1 / scale on the document root:
+     the two multiply out to ~1, i.e. true physical size. `zoom` (not
+     `transform: scale()`) is used deliberately — a transform on an
+     ancestor creates a new containing block for anything position:fixed
+     (nav, sound controls, Krishna's corner, the offline/update banners),
+     which would silently stop tracking the real screen; `zoom` has no such
+     side effect. This is self-correcting: once applied, Chrome's own
+     auto-fit relaxes back toward 1:1, so the next recalculation (fired by
+     resize/orientation listeners below) computes a target close to 1 —
+     effectively a no-op from then on.
+
+     Gated entirely on html.pwa-standalone (set synchronously in
+     index.html's inline bootstrap script), so this is a complete no-op in
+     every normal browser tab and in DevTools device emulation — neither
+     ever carries that class — regardless of "Request desktop site" or any
+     other Chrome setting. `zoom` is Chromium/WebKit-only and
+     unstandardized, which is acceptable only because this path never runs
+     outside the installed Android Chrome app. */
+  function correctStandaloneViewportZoom() {
+    if (!document.documentElement.classList.contains('pwa-standalone')) return;
+    if (!window.visualViewport) return;
+    function apply() {
+      var scale = window.visualViewport.scale || 1;
+      document.documentElement.style.zoom = (scale && Math.abs(scale - 1) > 0.02) ? String(1 / scale) : '';
+    }
+    apply();
+    window.visualViewport.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', apply);
+  }
+  correctStandaloneViewportZoom();
+
   /* ---------------- offline banner ----------------
      A calm, ambient note — never a browser error, never demanding action. */
   function showOfflineBanner() {

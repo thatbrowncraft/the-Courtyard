@@ -800,6 +800,61 @@
     .back-link{ padding:12px 20px; }
     #krishna-corner{ transform:scale(0.82); transform-origin:bottom right; bottom:14px; right:14px; }
   }
+
+  /* ---------- installed PWA on a phone: always the mobile presentation ----------
+     Mirrors the @media (max-width: 720px) block directly above, selector for
+     selector. A genuine installed-app launch is detected once, synchronously,
+     in index.html's inline bootstrap script — before the stylesheet is even
+     parsed, so there's no flash of the desktop-width version on startup — and
+     recorded as html.pwa-standalone. See that script's comment for why
+     display-mode alone can't be trusted: an installed Android WebAPK shares
+     Chrome's per-origin "Request desktop site" setting, which can make the
+     browser report a desktop-width viewport even on a phone screen, so this
+     rule set intentionally answers to a *class*, never to width, and stays
+     correct no matter what width Chrome claims.
+
+     Why this is a duplicate block rather than one shared definition: a class
+     selector and a `max-width` media feature are two different kinds of CSS
+     condition — there is no vanilla-CSS way to OR them within a single rule.
+     This project has no build step or preprocessor (GitHub-only workflow, no
+     local tooling), so a custom-media abstraction isn't available either. The
+     alternative — turning every value below into a CSS custom property so
+     both conditions merely *assign* the property — was considered and
+     rejected: it would mean touching each of these selectors' base (desktop)
+     declarations elsewhere in this file too, a much larger and riskier
+     change for a block this small. Given the choice, a short, clearly-labeled
+     duplicate kept physically adjacent to its source — easy to spot and keep
+     in sync by eye — is the safer, more honest option.
+
+     This deliberately does NOT also force the small-phone (360px) tightening
+     just below: that block is a genuine physical-screen-size tweak, not a
+     desktop-vs-mobile identity, so a standalone PWA on a larger phone
+     shouldn't get spacing meant for tiny screens — it still only applies by
+     actual width, same as in a normal browser tab.
+
+     Normal browser tabs, resized Chrome windows, and DevTools device
+     emulation never gain the .pwa-standalone class (only a genuine installed-
+     app launch does — see index.html), so their responsive behavior at every
+     width is completely unaffected by this block. */
+  html.pwa-standalone nav{ justify-content:flex-start; overflow-x:auto; gap:16px; }
+  html.pwa-standalone nav button{ font-size:0.66rem; padding:10px 4px; }
+  html.pwa-standalone .brand span.brand-text{ display:none; }
+  html.pwa-standalone .section-shell{ padding:44px 20px 70px; }
+  html.pwa-standalone #banyan{ opacity:0.15; width:150px; }
+  html.pwa-standalone .emotion-item{ padding:20px 6px; font-size:1.22rem; }
+  html.pwa-standalone .quick-links{ gap:20px; }
+  html.pwa-standalone .quick-links button{ padding:8px 2px; }
+  html.pwa-standalone #soundToggle{ width:38px; height:38px; }
+  html.pwa-standalone #soundPanel button{ padding:14px 18px; font-size:0.95rem; }
+  html.pwa-standalone .switch{ width:46px; height:27px; }
+  html.pwa-standalone .switch::after{ width:19px; height:19px; }
+  html.pwa-standalone .switch.on::after{ transform:translateX(19px); }
+  html.pwa-standalone .theme-dot{ width:28px; height:28px; }
+  html.pwa-standalone .setting-row{ padding:24px 0; gap:14px; }
+  html.pwa-standalone .chapter-row{ padding:22px 4px; }
+  html.pwa-standalone .back-link{ padding:12px 20px; }
+  html.pwa-standalone #krishna-corner{ transform:scale(0.82); transform-origin:bottom right; bottom:14px; right:14px; }
+
   /* small/budget Android phones — spacing only, same type scale */
   @media (max-width: 360px){
     .section-shell{ padding:36px 16px 64px; }
