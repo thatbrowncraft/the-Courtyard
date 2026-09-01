@@ -26,6 +26,20 @@
        100vh-vs-real-viewport mismatch. This does not blindly replace every
        vh in the file — only the three rules below that reference it. */
     --vh-100: 100vh;
+
+    /* Edge-to-edge safe-area fix: viewport-fit=cover (index.html) opts the
+       whole page into rendering under notches and the OS gesture-navigation
+       bar — that's necessary for the background to reach true edge-to-edge,
+       but without these, foreground content positioned near the very top or
+       bottom (the arrival diya's landing spot, Krishna's corner, the sound
+       control) can end up visually obscured behind that system UI. A normal
+       browser tab isn't rendered edge-to-edge the same way (Chrome's own
+       tab UI occupies that space), so env() resolves to 0px there and this
+       is a no-op — the effect is only visible in an installed, edge-to-edge
+       standalone app, which is exactly where it's needed. Defaults to 0px
+       on browsers that don't support env() at all. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   @supports (height: 100dvh){
     :root{ --vh-100: 100dvh; }
@@ -128,16 +142,14 @@
 
   /* ================= ARRIVAL RITUAL ================= */
   #arrival{
-    position:fixed; inset:0; z-index:200;
-    /* Explicit height (on top of inset:0) so this full-screen ritual overlay
-       tracks the real, currently-visible viewport rather than whatever
-       height the browser implicitly derives for a fixed element's
-       containing block — the two can disagree on Android Chrome while the
-       toolbar is animating in/out. top:0 (from inset:0 above) + this
-       explicit height together fully determine the box; per CSS's
-       over-constrained resolution, the redundant bottom:0 from inset:0 is
-       simply ignored rather than fighting this value. */
-    height:var(--vh-100);
+    position:fixed; left:0; right:0; z-index:200;
+    /* top/height (rather than inset:0 + height alone) so the box is
+       confined to the safe, unobstructed area on both ends — see
+       --safe-top/--safe-bottom above. On a device/context with no inset
+       (most desktop and browser-tab cases), both resolve to 0px and this
+       is identical to the previous top:0 + height:var(--vh-100). */
+    top:var(--safe-top);
+    height:calc(var(--vh-100) - var(--safe-top) - var(--safe-bottom));
     background:
       radial-gradient(ellipse 80% 55% at 50% 32%, rgba(224,174,100,0.10), transparent),
       linear-gradient(180deg,#170F09,#2A1C11 55%,#34240F);
@@ -163,7 +175,7 @@
      the glow off before it reaches Kanha Ji's corner. This shows up more
      plainly with no browser chrome at all (an installed app has no address
      bar to reconcile against), but the fix is correct in every context. */
-  #arrivalDiya.a-lit.a-finishing{ transform: translate(calc(50vw - 78px), calc(var(--vh-100) * 0.5 - 40px)) scale(0.68); }
+  #arrivalDiya.a-lit.a-finishing{ transform: translate(calc(50vw - 78px), calc((var(--vh-100) - var(--safe-top) - var(--safe-bottom)) * 0.5 - 40px)) scale(0.68); }
   .a-glow{
     position:absolute; left:50%; top:38%; width:8px; height:8px; transform:translate(-50%,-50%);
     background:radial-gradient(circle, rgba(224,174,100,0.85), transparent 72%);
@@ -400,7 +412,7 @@
   body.motion-reduced .feather-trail-mote{ display:none; }
 
   /* ---------- Kanha Ji's corner (signature element) ---------- */
-  #krishna-corner{ position:fixed; bottom:20px; right:22px; z-index:40; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  #krishna-corner{ position:fixed; bottom:calc(20px + var(--safe-bottom)); right:22px; z-index:40; display:flex; flex-direction:column; align-items:center; gap:8px; }
   .kj-platform{
     position:relative; width:108px; height:52px;
     background:linear-gradient(180deg, #4A3320, #241708);
@@ -449,7 +461,7 @@
     75%{ transform: scaleY(calc(1.02 + var(--jitter,0) * 0.04)) rotate(calc(1deg + var(--breeze,0) * 1.4deg + var(--jitter,0) * 1.1deg)); opacity:0.82; }
   }
   /* ---------- ambient sound control ---------- */
-  #soundControl{ position:fixed; bottom:26px; left:24px; z-index:41; display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
+  #soundControl{ position:fixed; bottom:calc(26px + var(--safe-bottom)); left:24px; z-index:41; display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
   #soundToggle{
     width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
     background:rgba(21,22,28,0.5); cursor:pointer; display:flex; align-items:center; justify-content:center;
@@ -807,7 +819,7 @@
     .setting-row{ padding:24px 0; gap:14px; }
     .chapter-row{ padding:22px 4px; }
     .back-link{ padding:12px 20px; }
-    #krishna-corner{ transform:scale(0.82); transform-origin:bottom right; bottom:14px; right:14px; }
+    #krishna-corner{ transform:scale(0.82); transform-origin:bottom right; bottom:calc(14px + var(--safe-bottom)); right:14px; }
   }
 
   /* ---------- installed PWA on a phone: always the mobile presentation ----------
@@ -862,7 +874,7 @@
   html.pwa-standalone .setting-row{ padding:24px 0; gap:14px; }
   html.pwa-standalone .chapter-row{ padding:22px 4px; }
   html.pwa-standalone .back-link{ padding:12px 20px; }
-  html.pwa-standalone #krishna-corner{ transform:scale(0.82); transform-origin:bottom right; bottom:14px; right:14px; }
+  html.pwa-standalone #krishna-corner{ transform:scale(0.82); transform-origin:bottom right; bottom:calc(14px + var(--safe-bottom)); right:14px; }
 
   /* small/budget Android phones — spacing only, same type scale */
   @media (max-width: 360px){
