@@ -154,7 +154,16 @@
   #arrivalDiya.a-lit{ opacity:1; }
   /* as the ritual ends, the same flame travels toward where it already waits in Kanha Ji's corner,
      so the transition reads as one continuous diya rather than a fade-out-fade-in of two separate ones */
-  #arrivalDiya.a-lit.a-finishing{ transform: translate(calc(50vw - 78px), calc(50vh - 40px)) scale(0.68); }
+  /* Uses var(--vh-100), not a raw vh unit, so the diya's travel distance is
+     measured against the exact same "real, currently visible viewport"
+     metric as #arrival's own height above — a raw 50vh can quietly disagree
+     with that (mobile browsers can report vh differently from the actual
+     visible area depending on whether toolbars are shown), and any gap
+     between the two overshoots the diya past the real bottom edge, cutting
+     the glow off before it reaches Kanha Ji's corner. This shows up more
+     plainly with no browser chrome at all (an installed app has no address
+     bar to reconcile against), but the fix is correct in every context. */
+  #arrivalDiya.a-lit.a-finishing{ transform: translate(calc(50vw - 78px), calc(var(--vh-100) * 0.5 - 40px)) scale(0.68); }
   .a-glow{
     position:absolute; left:50%; top:38%; width:8px; height:8px; transform:translate(-50%,-50%);
     background:radial-gradient(circle, rgba(224,174,100,0.85), transparent 72%);
