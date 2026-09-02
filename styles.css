@@ -899,3 +899,442 @@
   color:var(--ivory-faint); font-size:0.72rem; font-style:italic;
   opacity:0.75; margin-top:10px;
 }
+
+
+/* ================= MOBILE VIEW SAFETY LAYER =================
+   Courtyard mobile pass.
+   IMPORTANT: this block is intentionally isolated to <=720px.
+   Desktop rules above are not changed.
+   No HTML structure, app logic, data, themes, audio, or routing is altered.
+   The goal is simply to make the existing Courtyard breathe and behave like
+   a phone-sized reading experience without redesigning the desktop site. */
+
+@media (max-width: 720px){
+
+  html{
+    width:100%;
+    min-width:0;
+    overflow-x:hidden;
+    background-color:var(--ink-deep);
+  }
+
+  body{
+    width:100%;
+    min-width:0;
+    min-height:100dvh;
+    font-size:17px;
+    overflow-x:hidden;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* Keep the existing header, but make it a compact, one-line mobile
+     control strip. Navigation remains the same navigation, just scrollable. */
+  header{
+    width:100%;
+    min-height:58px;
+    padding:10px 14px;
+    gap:12px;
+    align-items:center;
+  }
+
+  .brand{
+    flex:0 0 auto;
+    gap:9px;
+    font-size:1rem;
+  }
+
+  .brand-mark{
+    width:15px;
+    height:15px;
+  }
+
+  .brand span.brand-text{
+    display:none;
+  }
+
+  nav{
+    flex:1 1 auto;
+    min-width:0;
+    width:auto;
+    flex-wrap:nowrap;
+    justify-content:flex-start;
+    gap:17px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    overscroll-behavior-x:contain;
+    padding:2px 2px 4px;
+  }
+
+  nav::-webkit-scrollbar{
+    display:none;
+  }
+
+  nav button{
+    flex:0 0 auto;
+    min-height:38px;
+    padding:9px 2px 8px;
+    font-size:0.68rem;
+    letter-spacing:0.11em;
+    white-space:nowrap;
+  }
+
+  main{
+    width:100%;
+    min-height:calc(100dvh - 58px);
+  }
+
+  /* Home */
+  .hero{
+    width:100%;
+    max-width:600px;
+    padding:72px 18px 16px;
+  }
+
+  .hero .eyebrow{
+    margin-bottom:16px;
+  }
+
+  .hero h1{
+    font-size:clamp(1.75rem, 8vw, 2.15rem);
+    line-height:1.2;
+    margin-bottom:17px;
+  }
+
+  .hero p{
+    max-width:430px;
+    font-size:1.02rem;
+    line-height:1.75;
+  }
+
+  .emotion-list{
+    width:100%;
+    max-width:440px;
+    margin:42px auto 0;
+    padding:0 18px;
+  }
+
+  .emotion-item{
+    min-height:52px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:14px 4px;
+    font-size:1.12rem;
+    line-height:1.35;
+  }
+
+  .quick-links{
+    max-width:100%;
+    gap:13px;
+    padding:0 18px 96px;
+    margin-top:54px;
+  }
+
+  .quick-links button{
+    min-height:40px;
+    padding:8px 2px;
+    font-size:0.72rem;
+  }
+
+  /* Every content page gets the same phone-safe side margins. */
+  .section-shell{
+    width:100%;
+    max-width:840px;
+    padding:42px 18px 88px;
+  }
+
+  .section-shell h2{
+    font-size:1.55rem;
+  }
+
+  .section-sub{
+    font-size:0.92rem;
+    line-height:1.7;
+    margin-bottom:32px;
+  }
+
+  /* Rows/cards never become wider than the viewport. */
+  .card,
+  .continue-card{
+    width:100%;
+    max-width:100%;
+  }
+
+  .card{
+    padding:20px 18px;
+  }
+
+  .continue-card{
+    padding:22px 18px;
+    margin:0 auto 34px;
+  }
+
+  .continue-actions,
+  .verse-nav-actions{
+    width:100%;
+    gap:10px;
+  }
+
+  .continue-btn,
+  .btn-primary{
+    min-height:44px;
+    padding:10px 16px;
+  }
+
+  /* Chapter and verse lists stay single-column and readable. */
+  .chapter-row{
+    width:100%;
+    gap:12px;
+    padding:18px 2px;
+  }
+
+  .chapter-num{
+    min-width:25px;
+    font-size:0.94rem;
+  }
+
+  .chapter-title{
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+
+  .verse-frontispiece{
+    padding:4px 0 34px;
+    margin-bottom:12px;
+  }
+
+  .verse-title{
+    font-size:1.35rem;
+    line-height:1.3;
+    overflow-wrap:anywhere;
+  }
+
+  .verse-sanskrit{
+    font-size:1.16rem;
+    line-height:1.75;
+    overflow-wrap:anywhere;
+  }
+
+  .verse-translit{
+    font-size:0.88rem;
+    line-height:1.7;
+    overflow-wrap:anywhere;
+  }
+
+  .verse-translation{
+    font-size:1.08rem;
+    line-height:1.85;
+  }
+
+  .verse-section{
+    padding:27px 0;
+  }
+
+  .verse-section p,
+  .verse-section li{
+    max-width:100%;
+    font-size:1.03rem;
+    line-height:1.85;
+  }
+
+  .verse-tags{
+    gap:7px;
+  }
+
+  /* Search/journal controls: 16px prevents mobile Safari/Android browser
+     text inputs from unexpectedly zooming the page. */
+  .search-bar input,
+  textarea.journal-input{
+    font-size:16px;
+  }
+
+  textarea.journal-input{
+    min-height:150px;
+    padding:15px;
+  }
+
+  .journal-actions{
+    justify-content:stretch;
+    margin-bottom:40px;
+  }
+
+  .journal-actions .btn-primary{
+    width:100%;
+  }
+
+  /* Settings: allow long descriptions to wrap instead of squeezing the
+     control off-screen. */
+  .setting-row{
+    align-items:flex-start;
+    gap:14px;
+    padding:20px 0;
+  }
+
+  .setting-row > div:first-child{
+    min-width:0;
+    flex:1 1 auto;
+  }
+
+  .setting-label,
+  .setting-desc{
+    overflow-wrap:anywhere;
+  }
+
+  .setting-desc{
+    line-height:1.55;
+  }
+
+  .theme-options{
+    flex:0 0 auto;
+    padding-top:2px;
+  }
+
+  /* Stats become two neat columns rather than tiny auto-fit cards. */
+  .stats-grid{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+
+  .stat-card{
+    min-width:0;
+    padding:26px 8px;
+  }
+
+  .stat-label{
+    font-size:0.68rem;
+    line-height:1.45;
+  }
+
+  /* Floating ambience controls stay inside the thumb-safe edges and don't
+     collide with the Krishna corner. */
+  #soundControl{
+    left:12px;
+    bottom:12px;
+    z-index:41;
+  }
+
+  #soundToggle{
+    width:40px;
+    height:40px;
+  }
+
+  #soundPanel{
+    left:0;
+    bottom:50px;
+    width:min(210px, calc(100vw - 28px));
+    min-width:0;
+    max-width:calc(100vw - 28px);
+  }
+
+  #soundPanel button{
+    min-height:44px;
+    padding:12px 16px;
+    font-size:0.9rem;
+  }
+
+  /* The decorative Krishna corner remains present, but is scaled down so
+     content and fixed controls never get crowded on a phone. */
+  #krishna-corner{
+    right:10px;
+    bottom:10px;
+    transform:scale(0.68);
+    transform-origin:bottom right;
+  }
+
+  /* The arrival ritual already works full-screen. Only reduce side padding
+     and typography enough for narrow phones. */
+  #arrivalTitle{
+    width:100%;
+    margin-top:38px;
+    padding:0 18px;
+  }
+
+  #arrivalTitle h1{
+    font-size:clamp(1.65rem, 8vw, 2.15rem);
+    line-height:1.2;
+  }
+
+  #arrivalTitle p{
+    font-size:0.96rem;
+    line-height:1.6;
+  }
+
+  /* PWA banners should never exceed the phone viewport or sit under the
+     bottom controls. */
+  .pwa-banner{
+    left:12px;
+    right:12px;
+    bottom:10px;
+    width:auto;
+    max-width:none;
+    transform:translateY(14px);
+    padding:12px 14px;
+  }
+
+  .pwa-banner.visible{
+    transform:translateY(0);
+  }
+
+  .pwa-banner-actions{
+    width:100%;
+    justify-content:flex-end;
+  }
+
+  .pwa-banner-btn{
+    min-height:40px;
+  }
+}
+
+/* Extra-narrow phones only: no layout redesign, just tighter edges. */
+@media (max-width: 380px){
+  .section-shell{
+    padding-left:14px;
+    padding-right:14px;
+  }
+
+  .hero{
+    padding-left:14px;
+    padding-right:14px;
+  }
+
+  .emotion-list{
+    padding-left:14px;
+    padding-right:14px;
+  }
+
+  nav{
+    gap:14px;
+  }
+
+  .quick-links{
+    gap:10px;
+    padding-left:14px;
+    padding-right:14px;
+  }
+
+  .quick-links .ql-sep{
+    display:none;
+  }
+
+  .continue-actions .continue-btn,
+  .verse-nav-actions .continue-btn{
+    flex:1 1 100%;
+    width:100%;
+  }
+
+  .setting-row{
+    gap:10px;
+  }
+
+  #krishna-corner{
+    transform:scale(0.6);
+    right:6px;
+    bottom:6px;
+  }
+
+  #soundControl{
+    left:8px;
+    bottom:8px;
+  }
+}
