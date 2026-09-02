@@ -23,11 +23,24 @@
      auto-shrank the forced-980px layout to fit the real screen, so the
      fix is a counter-zoom of 1 / scale on the document root: the two
      multiply out to ~1, i.e. true physical size. `zoom` (not
-     `transform: scale()`) is used deliberately — a transform on an
-     ancestor creates a new containing block for anything position:fixed
-     (nav, sound controls, Krishna's corner, the offline/update banners),
-     which would silently stop tracking the real screen; `zoom` has no such
-     side effect.
+     `transform: scale()`) is used deliberately here — a transform on
+     <html> itself would create a new containing block for every
+     position:fixed element in the app, independent of whether that's
+     wanted; `zoom` has no such side effect. (styles.css does deliberately
+     add a transform to <body> for html.pwa-standalone specifically so
+     fixed elements measure against the width-locked box set up below,
+     instead of the wide fake viewport — that's a separate, intentional
+     use of the same technique, one level down.)
+
+     Alongside the zoom correction, this also sets --true-vw from
+     window.screen.width — the actual physical device width, which stays
+     correct no matter what Chrome's *layout* viewport claims — so
+     styles.css can lock html.pwa-standalone body's width to it. zoom
+     alone only fixes *visual size* (text isn't shrunk to a point); without
+     this, *layout math* — nav's flex-wrap decision, spacing, anything
+     width-dependent — still resolves against the fake 980px canvas, which
+     is spacious enough to look "desktop" even once everything is the
+     right physical size.
 
      Gated entirely on html.pwa-standalone (set synchronously in
      index.html's inline bootstrap script), so this is a complete no-op in
@@ -35,6 +48,12 @@
      ever carries that class — regardless of "Request desktop site" or any
      other Chrome setting on this device. */
   window.__COURTYARD_APPLIED_ZOOM__ = '(not evaluated)';
+  window.__COURTYARD_TRUE_VW__ = '(not evaluated)';
+  function trueDeviceWidth() {
+    if (window.screen && window.screen.width) return window.screen.width;
+    if (window.visualViewport) return window.visualViewport.width * (window.visualViewport.scale || 1);
+    return window.innerWidth;
+  }
   function correctStandaloneViewportZoom() {
     if (!document.documentElement.classList.contains('pwa-standalone')) return;
     if (!window.visualViewport) return;
@@ -43,6 +62,9 @@
       var target = (scale && Math.abs(scale - 1) > 0.02) ? String(1 / scale) : '';
       document.documentElement.style.zoom = target;
       window.__COURTYARD_APPLIED_ZOOM__ = target || '1 (no correction needed)';
+      var trueW = trueDeviceWidth();
+      document.documentElement.style.setProperty('--true-vw', trueW + 'px');
+      window.__COURTYARD_TRUE_VW__ = trueW;
     }
     apply();
     window.visualViewport.addEventListener('resize', apply);
@@ -229,7 +251,10 @@
         ['innerWidth', window.innerWidth],
         ['visualViewport.width', window.visualViewport ? window.visualViewport.width : 'n/a'],
         ['visualViewport.scale', window.visualViewport ? window.visualViewport.scale : 'n/a'],
-        ['applied zoom (fix)', window.__COURTYARD_APPLIED_ZOOM__]
+        ['applied zoom (fix)', window.__COURTYARD_APPLIED_ZOOM__],
+        ['--true-vw (fix)', window.__COURTYARD_TRUE_VW__],
+        ['screen.width', window.screen ? window.screen.width : 'n/a'],
+        ['body computed width', document.body.getBoundingClientRect().width]
       ];
       var lines = open
         ? rows.map(function (r) { return '<div>' + r[0] + ': ' + r[1] + '</div>'; }).join('')

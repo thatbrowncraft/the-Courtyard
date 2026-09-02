@@ -40,6 +40,13 @@
        on browsers that don't support env() at all. */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* True-width lock for standalone: set from JS (pwa.js) to
+       window.screen.width — the real physical device width, which stays
+       correct even when Chrome forces a 980px *layout* viewport for
+       "Request desktop site". Defaults to 100vw so nothing changes until
+       html.pwa-standalone actually uses it below. */
+    --true-vw: 100vw;
   }
   @supports (height: 100dvh){
     :root{ --vh-100: 100dvh; }
@@ -857,6 +864,21 @@
      emulation never gain the .pwa-standalone class (only a genuine installed-
      app launch does — see index.html), so their responsive behavior at every
      width is completely unaffected by this block. */
+  /* Width-lock: max-width caps *layout* math (flex-wrap, %-widths — not
+     just visual size, which the zoom fix above already handles) to the
+     real device width, regardless of the 980px layout viewport Chrome
+     hands every selector above. margin auto centers this narrow column
+     inside that wider canvas; html's own background-color (matches
+     body's palette) fills the leftover margin seamlessly either side.
+     transform is a deliberate no-op *visually* — its only job is that any
+     transform on an ancestor makes it the containing block for
+     position:fixed descendants, so #arrival, #krishna-corner, and
+     #soundControl start measuring their top/right/bottom against this
+     correctly-narrow box instead of the wide fake viewport too. On a
+     device with no viewport lie (--true-vw already equals the real
+     width), max-width simply equals body's existing width — a no-op. */
+  html.pwa-standalone body{ max-width:var(--true-vw); margin:0 auto; transform:translateZ(0); }
+
   html.pwa-standalone nav{ justify-content:flex-start; overflow-x:auto; gap:16px; }
   html.pwa-standalone nav button{ font-size:0.66rem; padding:10px 4px; }
   html.pwa-standalone .brand span.brand-text{ display:none; }
