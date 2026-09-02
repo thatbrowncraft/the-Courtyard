@@ -2,72 +2,77 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
-<script>
-/* PWA-only viewport handling — installed standalone app only.
-   A normal Chrome tab or any desktop browser hits the early return on
-   the first line below and is left completely untouched; nothing here
-   runs outside standalone/home-screen mode. It must run synchronously
-   here, before styles.css and app.js do any layout work, so there's no
-   flash of the wrong width. See pwa.js for the rest of the PWA glue.
-
-   Two things happen once standalone is confirmed:
-   1. Bug fix: some Android home-screen (WebAPK/TWA) shells miscompute
-      "width=device-width", handing the page a layout viewport wider
-      than the phone's real CSS width. We read the true width straight
-      from window.screen instead of trusting the keyword.
-   2. Mobile-only lock: the Courtyard's installed app is meant to always
-      present its mobile layout — the compact nav and touch-sized
-      controls that styles.css already switches to at 720px and below
-      — even if it's ever installed on a desktop or tablet with a wider
-      screen. So the corrected width is capped at MOBILE_MAX (matching
-      that existing @media (max-width: 720px) breakpoint) rather than
-      passing through an arbitrarily large screen width. Real phones
-      are always well under that cap, so this cap changes nothing for
-      them — it only kicks in on a wider, non-phone standalone window. */
-(function () {
-  var isStandalone =
-    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-    window.navigator.standalone === true; // iOS home-screen
-  if (!isStandalone) return;
-
-  var meta = document.querySelector('meta[name="viewport"]');
-  if (!meta) return;
-
-  var MOBILE_MAX = 720; // keep in sync with styles.css's mobile breakpoint
-
-  function applyMobileWidth() {
-    var cssWidth = window.screen && window.screen.width;
-    if (!cssWidth || cssWidth < 200) return; // sanity guard
-    var width = Math.min(cssWidth, MOBILE_MAX);
-    meta.setAttribute('content', 'width=' + width + ', initial-scale=1.0, viewport-fit=cover');
-  }
-
-  applyMobileWidth();
-  // Manifest locks orientation to portrait, but some devices still fire
-  // this once on launch before settling — cheap to handle, never fires
-  // outside standalone mode.
-  window.addEventListener('orientationchange', applyMobileWidth);
-})();
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<!-- PWA app-launch detector — runs synchronously, before styles.css is
+     even requested, so html.pwa-standalone (used by the installed-PWA
+     mobile-lock rules in styles.css) is already set before anything
+     paints. No flash of the desktop-width layout on startup.
+
+     WHY THREE SIGNALS, NOT JUST display-mode: `display-mode: standalone`
+     is the standard signal for "this is an installed app, not a browser
+     tab," but an installed Android home-screen shortcut (WebAPK) shares
+     Chrome's per-origin "Request desktop site" setting with ordinary
+     browsing — if that's ever on for this origin, the installed launch's
+     viewport/display reporting can't be trusted on its own. iOS Safari
+     instead exposes navigator.standalone, which display-mode doesn't
+     reliably cover there either. And because the manifest's start_url
+     now carries a "?pwa=1" marker (manifest.webmanifest) that ONLY a
+     genuine home-screen launch of the Courtyard ever produces — normal
+     browser navigation to this site never includes it — that marker is
+     the most reliable signal of all, independent of whatever width or
+     display-mode Chrome decides to report. It's copied into
+     sessionStorage immediately, since it's only present on the very
+     first navigation, so in-app navigation and refreshes later in the
+     same session still know this is the installed app once the URL no
+     longer carries it. sessionStorage (not localStorage) is deliberate —
+     it resets for a normal browser tab and can never leak a mobile-only
+     mode into ordinary Chrome browsing.
+
+     This is pure detection/state — it never changes routing, markup, or
+     any of app.js's behavior, matching how pwa.js is kept separate too. -->
+<script>
+  (function () {
+    var STORAGE_KEY = 'courtyard:pwa-session';
+    var isAppSession = false;
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('pwa') === '1') {
+        isAppSession = true;
+        window.sessionStorage.setItem(STORAGE_KEY, '1');
+      } else if (window.sessionStorage.getItem(STORAGE_KEY) === '1') {
+        isAppSession = true;
+      }
+    } catch (e) {
+      /* sessionStorage/URLSearchParams can throw in locked-down or
+         private-browsing contexts — fail closed to "normal browser tab". */
+    }
+    var isStandaloneDisplay = false;
+    try {
+      isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches;
+    } catch (e) { /* matchMedia unsupported — ignore, other signals still apply */ }
+    var isIosStandalone = navigator.standalone === true;
+
+    window.__COURTYARD_PWA_SESSION__ = isAppSession;
+    if (isStandaloneDisplay || isIosStandalone || isAppSession) {
+      document.documentElement.classList.add('pwa-standalone');
+    }
+  })();
+</script>
+
 <link rel="stylesheet" href="styles.css">
 
 <!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
-     service-worker.js — neither touches routing, layout, or app.js.
-     The one exception is the small inline script right after the
-     viewport meta tag above: it only activates in standalone
-     (installed) mode, where it corrects the layout viewport width and
-     caps it so the installed app always renders the mobile layout. A
-     normal browser tab, on any device, is a no-op and untouched. -->
+     service-worker.js — neither touches routing, layout, or app.js. -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#241811">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/icons/favicon-16.png" sizes="16x16" type="image/png">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body data-view="home">
 
