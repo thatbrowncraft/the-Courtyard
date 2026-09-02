@@ -2,7 +2,7 @@
   "name": "Kanha Ji's Courtyard",
   "short_name": "Courtyard",
   "description": "A quiet, offline-first companion for sitting with a verse of the Gita when your heart needs stillness.",
-  "start_url": "./?pwa=1",
+  "start_url": ".",
   "scope": ".",
   "id": ".",
   "display": "standalone",

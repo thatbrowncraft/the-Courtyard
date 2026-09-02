@@ -6,63 +6,6 @@
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-
-<!-- PWA app-launch detector — runs synchronously, before styles.css is
-     even requested, so html.pwa-standalone (used by the installed-PWA
-     mobile-lock rules in styles.css) is already set before anything
-     paints. No flash of the desktop-width layout on startup.
-
-     WHY THREE SIGNALS, NOT JUST display-mode: `display-mode: standalone`
-     is the standard signal for "this is an installed app, not a browser
-     tab," but an installed Android home-screen shortcut (WebAPK) shares
-     Chrome's per-origin "Request desktop site" setting with ordinary
-     browsing — if that's ever on for this origin, the installed launch's
-     viewport/display reporting can't be trusted on its own. iOS Safari
-     instead exposes navigator.standalone, which display-mode doesn't
-     reliably cover there either. And because the manifest's start_url
-     now carries a "?pwa=1" marker (manifest.webmanifest) that ONLY a
-     genuine home-screen launch of the Courtyard ever produces — normal
-     browser navigation to this site never includes it — that marker is
-     the most reliable signal of all, independent of whatever width or
-     display-mode Chrome decides to report. It's copied into
-     sessionStorage immediately, since it's only present on the very
-     first navigation, so in-app navigation and refreshes later in the
-     same session still know this is the installed app once the URL no
-     longer carries it. sessionStorage (not localStorage) is deliberate —
-     it resets for a normal browser tab and can never leak a mobile-only
-     mode into ordinary Chrome browsing.
-
-     This is pure detection/state — it never changes routing, markup, or
-     any of app.js's behavior, matching how pwa.js is kept separate too. -->
-<script>
-  (function () {
-    var STORAGE_KEY = 'courtyard:pwa-session';
-    var isAppSession = false;
-    try {
-      var params = new URLSearchParams(window.location.search);
-      if (params.get('pwa') === '1') {
-        isAppSession = true;
-        window.sessionStorage.setItem(STORAGE_KEY, '1');
-      } else if (window.sessionStorage.getItem(STORAGE_KEY) === '1') {
-        isAppSession = true;
-      }
-    } catch (e) {
-      /* sessionStorage/URLSearchParams can throw in locked-down or
-         private-browsing contexts — fail closed to "normal browser tab". */
-    }
-    var isStandaloneDisplay = false;
-    try {
-      isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches;
-    } catch (e) { /* matchMedia unsupported — ignore, other signals still apply */ }
-    var isIosStandalone = navigator.standalone === true;
-
-    window.__COURTYARD_PWA_SESSION__ = isAppSession;
-    if (isStandaloneDisplay || isIosStandalone || isAppSession) {
-      document.documentElement.classList.add('pwa-standalone');
-    }
-  })();
-</script>
-
 <link rel="stylesheet" href="styles.css">
 
 <!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
@@ -72,7 +15,6 @@
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/icons/favicon-16.png" sizes="16x16" type="image/png">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body data-view="home">
 
