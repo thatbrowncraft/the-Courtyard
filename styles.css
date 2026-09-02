@@ -900,10 +900,13 @@
   opacity:0.75; margin-top:10px;
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
-  body {
-    max-width: 480px !important;
-    margin: 0 auto !important;
+  html, body {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     min-height: 100vh;
     overflow-x: hidden;
+    touch-action: pan-x pan-y; /* Blocks pinch-to-zoom and gestures on mobile */
   }
 }
