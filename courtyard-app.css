@@ -1,400 +1,257 @@
 /*
-  Kanha Ji's Courtyard — installed-app mobile presentation layer
+  Kanha Ji's Courtyard — installed PWA mobile presentation layer.
 
-  Only html.courtyard-app-mode matches these rules.
-  The normal website remains untouched.
+  IMPORTANT:
+  There is intentionally NO viewport-width/body-width/zoom manipulation here.
+  Chrome Desktop Site may report a wide layout viewport, but an installed PWA
+  is still exposed as display-mode: standalone. We use that app display mode
+  as the switch and apply the same phone layout directly.
 
-  The previous version made the body equal to visualViewport.width.
-  That was the source of the skinny-column result under Chrome Desktop Site:
-  Chrome was rendering a ~980px layout viewport but the page itself had been
-  forced to ~412 CSS px, so it appeared scaled down.
-
-  This version leaves the document full-width and simply applies the
-  Courtyard's proven mobile rules without depending on @media width.
+  This file is loaded after styles.css, so these rules win only in the app.
 */
 
-html.courtyard-app-mode,
-html.courtyard-app-mode body {
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-  overflow-x: hidden;
-}
-
-html.courtyard-app-mode body {
-  min-height: 100dvh;
-  height: auto;
-  overflow-y: auto;
-  -webkit-text-size-adjust: 100%;
-  touch-action: pan-y;
-  box-sizing: border-box;
-}
-
-html.courtyard-app-mode *,
-html.courtyard-app-mode *::before,
-html.courtyard-app-mode *::after {
-  box-sizing: border-box;
-}
-
-/* Header */
-html.courtyard-app-mode header {
-  width: 100%;
-  min-height: 58px;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
-  gap: 12px;
-  align-items: center;
-}
-
-html.courtyard-app-mode .brand {
-  flex: 0 0 auto;
-}
-
-html.courtyard-app-mode .brand span.brand-text {
-  display: none;
-}
-
-html.courtyard-app-mode nav {
-  flex: 1 1 auto;
-  width: auto;
-  min-width: 0;
-  max-width: none;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
-  gap: 17px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 2px 2px 4px;
-}
-
-html.courtyard-app-mode nav::-webkit-scrollbar {
-  display: none;
-}
-
-html.courtyard-app-mode nav button {
-  flex: 0 0 auto;
-  min-height: 38px;
-  padding: 9px 2px 8px;
-  font-size: 0.68rem;
-  letter-spacing: 0.11em;
-  white-space: nowrap;
-}
-
-/* Main */
-html.courtyard-app-mode main {
-  width: 100%;
-  min-height: calc(100dvh - 58px);
-}
-
-/* Home */
-html.courtyard-app-mode .hero {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 72px 18px 16px;
-  text-align: center;
-}
-
-html.courtyard-app-mode .hero .eyebrow {
-  margin-bottom: 16px;
-}
-
-html.courtyard-app-mode .hero h1 {
-  font-size: 2.05rem;
-  line-height: 1.2;
-  margin-bottom: 17px;
-}
-
-html.courtyard-app-mode .hero p {
-  width: 100%;
-  max-width: 430px;
-  margin-left: auto;
-  margin-right: auto;
-  font-size: 1.02rem;
-  line-height: 1.75;
-}
-
-html.courtyard-app-mode .continue-card {
-  width: calc(100% - 36px);
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-html.courtyard-app-mode .emotion-list {
-  width: 100%;
-  max-width: none;
-  margin: 42px auto 0;
-  padding: 0 18px;
-}
-
-html.courtyard-app-mode .emotion-item {
-  width: 100%;
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 4px;
-  font-size: 1.12rem;
-  line-height: 1.35;
-}
-
-html.courtyard-app-mode .home-response {
-  width: 100%;
-  max-width: none;
-  padding-left: 18px;
-  padding-right: 18px;
-}
-
-html.courtyard-app-mode .quick-links {
-  width: 100%;
-  max-width: none;
-  gap: 13px;
-  margin-top: 54px;
-  padding: 0 18px 96px;
-}
-
-html.courtyard-app-mode .quick-links button {
-  min-height: 40px;
-  padding: 8px 2px;
-  font-size: 0.72rem;
-}
-
-/* Every non-home view */
-html.courtyard-app-mode .section-shell {
-  width: 100%;
-  max-width: none;
-  margin-left: 0;
-  margin-right: 0;
-  padding: 42px 18px 88px;
-}
-
-html.courtyard-app-mode .section-shell h2 {
-  font-size: 1.55rem;
-}
-
-html.courtyard-app-mode .section-sub {
-  font-size: 0.92rem;
-  line-height: 1.7;
-  margin-bottom: 32px;
-}
-
-html.courtyard-app-mode .card,
-html.courtyard-app-mode .continue-card {
-  width: 100%;
-  max-width: 100%;
-}
-
-html.courtyard-app-mode .card {
-  padding: 20px 18px;
-}
-
-html.courtyard-app-mode .chapter-row {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  padding: 18px 2px;
-  gap: 12px;
-}
-
-html.courtyard-app-mode .chapter-title,
-html.courtyard-app-mode .verse-title,
-html.courtyard-app-mode .verse-sanskrit,
-html.courtyard-app-mode .verse-translit,
-html.courtyard-app-mode .verse-translation {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-html.courtyard-app-mode .verse-title {
-  font-size: 1.35rem;
-  line-height: 1.3;
-}
-
-html.courtyard-app-mode .verse-sanskrit {
-  font-size: 1.16rem;
-  line-height: 1.75;
-}
-
-html.courtyard-app-mode .verse-translit {
-  font-size: 0.88rem;
-  line-height: 1.7;
-}
-
-html.courtyard-app-mode .verse-translation {
-  width: 100%;
-  max-width: 100%;
-  font-size: 1.08rem;
-  line-height: 1.85;
-}
-
-html.courtyard-app-mode .verse-section {
-  width: 100%;
-  max-width: 100%;
-}
-
-html.courtyard-app-mode .verse-section p,
-html.courtyard-app-mode .verse-section li {
-  width: 100%;
-  max-width: 100%;
-  font-size: 1.03rem;
-  line-height: 1.85;
-}
-
-html.courtyard-app-mode .continue-actions,
-html.courtyard-app-mode .verse-nav-actions {
-  width: 100%;
-  gap: 10px;
-}
-
-html.courtyard-app-mode .continue-btn,
-html.courtyard-app-mode .btn-primary {
-  min-height: 44px;
-  padding: 10px 16px;
-}
-
-html.courtyard-app-mode .back-link {
-  padding: 12px 20px;
-}
-
-/* Settings / stats */
-html.courtyard-app-mode .setting-row {
-  align-items: flex-start;
-  gap: 14px;
-  padding: 24px 0;
-  min-width: 0;
-}
-
-html.courtyard-app-mode .setting-row > div:first-child {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-html.courtyard-app-mode .setting-label,
-html.courtyard-app-mode .setting-desc {
-  overflow-wrap: anywhere;
-}
-
-html.courtyard-app-mode .theme-options {
-  flex: 0 0 auto;
-}
-
-html.courtyard-app-mode .switch {
-  width: 46px;
-  height: 27px;
-  flex: 0 0 auto;
-}
-
-html.courtyard-app-mode .switch::after {
-  width: 19px;
-  height: 19px;
-}
-
-html.courtyard-app-mode .switch.on::after {
-  transform: translateX(19px);
-}
-
-html.courtyard-app-mode .theme-dot {
-  width: 28px;
-  height: 28px;
-}
-
-html.courtyard-app-mode .stats-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-html.courtyard-app-mode .stat-card {
-  min-width: 0;
-}
-
-/* Fixed / decorative elements */
-html.courtyard-app-mode #stars,
-html.courtyard-app-mode #courtyard,
-html.courtyard-app-mode #atmosphere,
-html.courtyard-app-mode #ambient {
-  width: 100%;
-  max-width: none;
-  left: 0;
-  right: auto;
-}
-
-html.courtyard-app-mode #banyan {
-  width: 150px;
-  opacity: 0.15;
-}
-
-html.courtyard-app-mode #soundControl {
-  left: calc(12px + env(safe-area-inset-left, 0px));
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-}
-
-html.courtyard-app-mode #soundToggle {
-  width: 40px;
-  height: 40px;
-}
-
-html.courtyard-app-mode #soundPanel {
-  left: 0;
-  bottom: 50px;
-  width: min(210px, calc(100vw - 28px));
-  min-width: 0;
-  max-width: calc(100vw - 28px);
-}
-
-html.courtyard-app-mode #soundPanel button {
-  min-height: 44px;
-  padding: 12px 16px;
-  font-size: 0.9rem;
-}
-
-html.courtyard-app-mode #krishna-corner {
-  right: 10px;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  transform: scale(0.68);
-  transform-origin: bottom right;
-}
-
-html.courtyard-app-mode .pwa-banner {
-  left: 12px;
-  right: 12px;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  width: auto;
-  max-width: none;
-}
-
-html.courtyard-app-mode footer {
-  width: 100%;
-  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
-}
-
-@media (max-width: 380px) {
-  html.courtyard-app-mode .section-shell {
-    padding-left: 14px;
-    padding-right: 14px;
+@media (display-mode: standalone) {
+  html {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: var(--ink-deep);
+    touch-action: pan-y;
   }
 
-  html.courtyard-app-mode .hero {
-    padding-left: 14px;
-    padding-right: 14px;
+  body {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 100vh;
+    height: auto;
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-text-size-adjust: 100%;
+    touch-action: pan-y;
   }
 
-  html.courtyard-app-mode .emotion-list {
-    padding-left: 14px;
-    padding-right: 14px;
+  /* Header/nav: compact phone strip, horizontally scrollable. */
+  header {
+    width: 100%;
+    min-height: 58px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: nowrap;
   }
 
-  html.courtyard-app-mode nav {
+  .brand {
+    flex: 0 0 auto;
+    gap: 9px;
+  }
+
+  .brand span.brand-text {
+    display: none;
+  }
+
+  nav {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 17px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 2px 4px;
+  }
+
+  nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  nav button {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 9px 2px 8px;
+    font-size: 0.66rem;
+    letter-spacing: 0.10em;
+    white-space: nowrap;
+  }
+
+  main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Home view. */
+  .hero {
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 72px 20px 16px;
+  }
+
+  .hero p {
+    max-width: 430px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .emotion-list {
+    width: 100%;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+  }
+
+  .emotion-item {
+    padding: 20px 6px;
+    font-size: 1.22rem;
+  }
+
+  .quick-links {
+    width: 100%;
+    max-width: 760px;
+    gap: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .quick-links button {
+    padding: 8px 2px;
+  }
+
+  /* Reading/secondary views. */
+  .section-shell {
+    width: 100%;
+    max-width: 840px;
+    padding: 44px 20px 70px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .chapter-row {
+    padding: 22px 4px;
+    min-width: 0;
+  }
+
+  .back-link {
+    padding: 12px 20px;
+  }
+
+  /* Keep content inside the available app width. */
+  .card,
+  .continue-card,
+  .verse-frontispiece,
+  .verse-section,
+  .chapter-row,
+  .verse-nav,
+  .setting-row,
+  .stats-grid {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .verse-section p,
+  .verse-section li,
+  .verse-translation,
+  .verse-sanskrit,
+  .verse-translit {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .setting-row {
+    padding: 24px 0;
     gap: 14px;
   }
 
-  html.courtyard-app-mode .quick-links {
-    gap: 10px;
-    padding-left: 14px;
-    padding-right: 14px;
+  .setting-row > * {
+    min-width: 0;
   }
 
-  html.courtyard-app-mode .quick-links .ql-sep {
-    display: none;
+  /* Courtyard atmosphere and fixed controls. */
+  #stars,
+  #courtyard,
+  #atmosphere,
+  #ambient,
+  #feather-wander {
+    max-width: none;
+  }
+
+  #banyan {
+    opacity: 0.15;
+    width: 150px;
+  }
+
+  #krishna-corner {
+    transform: scale(0.82);
+    transform-origin: bottom right;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  #soundToggle {
+    width: 38px;
+    height: 38px;
+  }
+
+  #soundPanel button {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+
+  .switch {
+    width: 46px;
+    height: 27px;
+  }
+
+  .switch::after {
+    width: 19px;
+    height: 19px;
+  }
+
+  .switch.on::after {
+    transform: translateX(19px);
+  }
+
+  .theme-dot {
+    width: 28px;
+    height: 28px;
+  }
+
+  footer {
+    width: 100%;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pwa-banner {
+    max-width: calc(100vw - 24px);
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 360px) {
+  .section-shell {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .emotion-list {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  nav {
+    gap: 12px;
   }
 }
