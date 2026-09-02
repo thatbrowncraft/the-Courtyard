@@ -215,6 +215,8 @@
         ['visualViewport.width', window.visualViewport ? window.visualViewport.width : 'n/a'],
         ['visualViewport.scale', window.visualViewport ? window.visualViewport.scale : 'n/a'],
         ['screen.width', window.screen ? window.screen.width : 'n/a'],
+        ['devicePixelRatio', window.devicePixelRatio || 'n/a'],
+        ['--pwa-device-width', getComputedStyle(document.documentElement).getPropertyValue('--pwa-device-width') || '(unset)'],
         ['html computed width', document.documentElement.getBoundingClientRect().width],
         ['body computed width', document.body.getBoundingClientRect().width]
       ];
