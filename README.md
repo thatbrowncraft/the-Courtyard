@@ -185,3 +185,11 @@ double-clicking it won't work in most browsers.
 python3 -m http.server 8000
 # then open http://localhost:8000/
 ```
+
+---
+
+## For future Claude sessions
+
+See `README_FOR_CLAUDE.md` for the full project history, architecture
+decisions, and standing rules — that file is written for an AI assistant
+picking up work on this project, not for a human reader.

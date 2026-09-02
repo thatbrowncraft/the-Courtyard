@@ -2,166 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-
-<!-- PWA app-launch detector — runs synchronously, before styles.css is
-     even requested, so html.pwa-standalone (used by the installed-PWA
-     mobile-lock rules in styles.css) is already set before anything
-     paints. No flash of the desktop-width layout on startup.
-
-     WHY THREE SIGNALS, NOT JUST display-mode: `display-mode: standalone`
-     is the standard signal for "this is an installed app, not a browser
-     tab," but an installed Android home-screen shortcut (WebAPK) shares
-     Chrome's per-origin "Request desktop site" setting with ordinary
-     browsing — if that's ever on for this origin, the installed launch's
-     viewport/display reporting can't be trusted on its own. iOS Safari
-     instead exposes navigator.standalone, which display-mode doesn't
-     reliably cover there either. And because the manifest's start_url
-     now carries a "?pwa=1" marker (manifest.webmanifest) that ONLY a
-     genuine home-screen launch of the Courtyard ever produces — normal
-     browser navigation to this site never includes it — that marker is
-     the most reliable signal of all, independent of whatever width or
-     display-mode Chrome decides to report. It's copied into
-     sessionStorage immediately, since it's only present on the very
-     first navigation, so in-app navigation and refreshes later in the
-     same session still know this is the installed app once the URL no
-     longer carries it. sessionStorage (not localStorage) is deliberate —
-     it resets for a normal browser tab and can never leak a mobile-only
-     mode into ordinary Chrome browsing.
-
-     This is pure detection/state — it never changes routing, markup, or
-     any of app.js's behavior, matching how pwa.js is kept separate too. -->
-<script>
-  (function () {
-    var STORAGE_KEY = 'courtyard:pwa-session';
-    var isAppSession = false;
-    try {
-      var params = new URLSearchParams(window.location.search);
-      if (params.get('pwa') === '1') {
-        isAppSession = true;
-        window.sessionStorage.setItem(STORAGE_KEY, '1');
-      } else if (window.sessionStorage.getItem(STORAGE_KEY) === '1') {
-        isAppSession = true;
-      }
-    } catch (e) {
-      /* sessionStorage/URLSearchParams can throw in locked-down or
-         private-browsing contexts — fail closed to "normal browser tab". */
-    }
-    var isStandaloneDisplay = false;
-    try {
-      isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches;
-    } catch (e) { /* matchMedia unsupported — ignore, other signals still apply */ }
-    var isIosStandalone = navigator.standalone === true;
-
-    window.__COURTYARD_PWA_SESSION__ = isAppSession;
-    if (isStandaloneDisplay || isIosStandalone || isAppSession) {
-      document.documentElement.classList.add('pwa-standalone');
-
-      /* Width anchor for the installed-PWA mobile-lock (see styles.css's
-         html.pwa-standalone rules). Reads window.screen.width — the OS's
-         reported physical display width in CSS px — exactly once, here,
-         before anything paints.
-
-         Why screen.width and not innerWidth/visualViewport.width: those
-         two describe whatever layout viewport Chrome ends up rendering,
-         which on this installed launch is the very thing that's wrong
-         (see CHANGELOG/styles.css for the 1646px-viewport bug this is
-         fixing). screen.width is a separate, OS-level reading that isn't
-         derived from the page's own layout, so it stays correct (it
-         already reported the true 412 in on-device diagnostics even while
-         innerWidth/visualViewport did not) — and critically, nothing this
-         script or styles.css does can feed back into it, so there's no
-         repeat of the Session 30 zoom-loop bug (see pwa.js): this value
-         is read once and never re-derived from anything we ourselves set.
-
-         Written as a literal px custom property (not vw/%), because vw/%
-         would just resolve against the same broken viewport again — that
-         self-referential math is exactly why the previous
-         width:100%/max-width:100vw rule had no effect. */
-      try {
-        if (window.screen && typeof window.screen.width === 'number' && window.screen.width > 0) {
-          document.documentElement.style.setProperty('--pwa-device-width', window.screen.width + 'px');
-        }
-      } catch (e) { /* no screen API — CSS falls back to 100vw, previous behavior */ }
-
-      /* Cold-start zoom flash (Session 32, revised): on-device diagnostics
-         showed html/body already computing the CORRECT 412px — the width
-         fix works — but the browser was still applying a
-         visualViewport.scale of ~0.42 on the very first frame, as if it
-         had assumed a legacy ~980px "no mobile viewport" page and zoomed
-         out to fit it, then corrected itself shortly after on its own.
-
-         That scale is a native/compositor-level property — it isn't
-         something any CSS width/max-width rule, or this page's own DOM,
-         can read or set correctly, and nothing here tries to counter-zoom
-         it (see the removed Session-30 mechanism above and in pwa.js for
-         why that approach is banned).
-
-         First attempt at hiding the broken frame trusted a `resize` event
-         (or a blind 500ms timeout) as the signal that it was safe to
-         reveal. On-device testing showed that's not reliable: a resize
-         event can fire before the scale has actually corrected, and the
-         broken frame was still visible when it was captured. So this
-         checks the ACTUAL numbers — innerWidth and visualViewport.scale,
-         compared against the independent screen.width anchor already
-         established above — rather than trusting any one event to mean
-         "done." It's still not a feedback loop: it only ever reads
-         values the browser reports on its own, never a value this page
-         wrote, so there's nothing to reinforce or diverge. Polls briefly
-         while hidden, reveals the instant the numbers look right, and a
-         2-second hard cap guarantees the app is never stuck hidden if a
-         device never reports a settled state at all. */
-      document.documentElement.classList.add('pwa-settling');
-      var settled = false;
-      var pollId = null;
-      function revealAfterSettle() {
-        if (settled) return;
-        settled = true;
-        if (pollId !== null) clearInterval(pollId);
-        document.documentElement.classList.remove('pwa-settling');
-      }
-      function looksSettled() {
-        var target = window.screen && window.screen.width;
-        if (!target) return true; // can't verify on this device — don't hide indefinitely
-        var iw = window.innerWidth;
-        var scale = window.visualViewport ? window.visualViewport.scale : 1;
-        return Math.abs(iw - target) <= 8 && Math.abs(scale - 1) <= 0.05;
-      }
-      if (looksSettled()) {
-        revealAfterSettle();
-      } else {
-        try {
-          if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', function () {
-              if (looksSettled()) revealAfterSettle();
-            });
-          }
-          window.addEventListener('resize', function () {
-            if (looksSettled()) revealAfterSettle();
-          });
-        } catch (e) { /* ignore — polling and the hard cap below still apply */ }
-        pollId = setInterval(function () {
-          if (looksSettled()) revealAfterSettle();
-        }, 50);
-        setTimeout(revealAfterSettle, 2000);
-      }
-    }
-  })();
-</script>
-
 <link rel="stylesheet" href="styles.css">
 
 <!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
      service-worker.js — neither touches routing, layout, or app.js. -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#EBE3D6">
+<meta name="theme-color" content="#241811">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/icons/favicon-16.png" sizes="16x16" type="image/png">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body data-view="home">
 
@@ -426,6 +279,17 @@
         </div>
         <div class="setting-row">
           <div>
+            <div class="setting-label">Time of day theme</div>
+            <div class="setting-desc">Choose the light your courtyard sits in</div>
+          </div>
+          <div class="theme-options">
+            <button class="theme-dot active" style="background:#3B2A1C" data-theme="dusk" aria-label="Dusk" aria-pressed="true"></button>
+            <button class="theme-dot" style="background:#160F0A" data-theme="night" aria-label="Night" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#4A3520" data-theme="dawn" aria-label="Dawn" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
             <div class="setting-label">Replay the welcome</div>
             <div class="setting-desc">See the arrival sequence again, right now</div>
           </div>
@@ -437,64 +301,6 @@
             <div class="setting-desc">This cannot be undone</div>
           </div>
           <button id="clearDataBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Clear</button>
-        </div>
-      </div>
-
-      <!-- Appearance / Theme (Session 30) — five palette swatches, replacing
-           the old three-dot dusk/night/dawn picker. A separate card from the
-           toggle/button row above so it has room to breathe on a phone. -->
-      <div class="card">
-        <div class="setting-row" style="border-bottom:none; padding-bottom:6px;">
-          <div>
-            <div class="setting-label">Appearance</div>
-            <div class="setting-desc">Choose the light your courtyard sits in</div>
-          </div>
-        </div>
-        <div class="theme-swatches" role="group" aria-label="Theme">
-          <button class="theme-swatch" data-theme="espresso" aria-label="Espresso Clay" aria-pressed="false">
-            <span class="theme-swatch-color" style="background:#5B4C3A"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
-            <span class="theme-swatch-name">Espresso</span>
-          </button>
-          <button class="theme-swatch" data-theme="earth" aria-label="Rich Earth Brown" aria-pressed="false">
-            <span class="theme-swatch-color" style="background:#8A7356"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
-            <span class="theme-swatch-name">Earth</span>
-          </button>
-          <button class="theme-swatch" data-theme="mushroom" aria-label="Soft Mushroom Beige" aria-pressed="false">
-            <span class="theme-swatch-color" style="background:#C4B39A"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
-            <span class="theme-swatch-name">Mushroom</span>
-          </button>
-          <button class="theme-swatch active" data-theme="putty" aria-label="Warm Putty" aria-pressed="true">
-            <span class="theme-swatch-color" style="background:#DED1BA"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
-            <span class="theme-swatch-name">Putty</span>
-          </button>
-          <button class="theme-swatch" data-theme="bone" aria-label="Gentle Bone White" aria-pressed="false">
-            <span class="theme-swatch-color" style="background:#F4EFE6"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
-            <span class="theme-swatch-name">Bone</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Reading / Text Size (Session 30) — global font-scale, three steps. -->
-      <div class="card">
-        <div class="setting-row" style="border-bottom:none; padding-bottom:6px;">
-          <div>
-            <div class="setting-label">Reading / Text Size</div>
-            <div class="setting-desc">Adjust text size throughout the Courtyard</div>
-          </div>
-        </div>
-        <div class="font-size-control" role="group" aria-label="Text size">
-          <button class="font-size-option" data-size="small" aria-label="Small text" aria-pressed="false">
-            <span class="fs-glyph" aria-hidden="true">A</span>
-            <span class="fs-dot" aria-hidden="true"></span>
-          </button>
-          <button class="font-size-option active" data-size="normal" aria-label="Normal text" aria-pressed="true">
-            <span class="fs-glyph" aria-hidden="true">A</span>
-            <span class="fs-dot" aria-hidden="true"></span>
-          </button>
-          <button class="font-size-option" data-size="large" aria-label="Large text" aria-pressed="false">
-            <span class="fs-glyph" aria-hidden="true">A</span>
-            <span class="fs-dot" aria-hidden="true"></span>
-          </button>
         </div>
       </div>
 

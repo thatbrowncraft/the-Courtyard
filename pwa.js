@@ -10,31 +10,6 @@
 (function () {
   'use strict';
 
-  /* ---------------- standalone-PWA width correction: REMOVED (Session 30) ----------------
-     A previous session added a JS fix here that read
-     window.visualViewport.scale and, when it deviated from 1, applied a
-     counter-`zoom` on <html> plus a JS-measured `--true-vw` custom
-     property for styles.css to lock body's width to.
-
-     On-device testing (this session) showed that mechanism was the
-     actual cause of the "content squeezed to the left, dead space on the
-     right" bug, not a fix for it: the debug badge captured
-     visualViewport.scale: 0.25, applied zoom (fix): 4, and
-     innerWidth: 1646 — 1646 is ~4x the device's real 412px width, i.e.
-     exactly the zoom factor the fix had just applied. Setting
-     `document.documentElement.style.zoom` fed back into the very
-     visualViewport reading the code used to decide how much zoom to
-     apply, so it never actually converged on 1 — it just kept
-     re-asserting a 4x correction against a problem it was itself
-     causing.
-
-     Rather than patch that loop with another zoom/scale value (which
-     would just be a different guess at the same fragile mechanism), the
-     fix is now pure CSS and never depends on measuring scale at all —
-     see the html.pwa-standalone rules in styles.css. That approach can't
-     self-reinforce the way a JS-measured zoom loop can, because it never
-     reads back a value it just wrote. */
-
   /* ---------------- offline banner ----------------
      A calm, ambient note — never a browser error, never demanding action. */
   function showOfflineBanner() {
@@ -185,56 +160,4 @@
            works without a service worker, just without offline support */
       });
   });
-
-  /* ---------------- TEMPORARY: PWA detection debug badge ----------------
-     Exists only to answer, directly off the installed phone, exactly what
-     index.html's bootstrap script detected — there's no laptop/DevTools in
-     this workflow, so this is the only way to see it. Tap the badge to
-     expand it, screenshot it, done — then delete this whole block (down to
-     the matching end-comment below) once the mobile-lock is confirmed
-     working. It never affects layout or behavior either way. */
-  function mountPwaDebugBadge() {
-    var badge = document.createElement('div');
-    badge.id = 'courtyardPwaDebug';
-    badge.style.cssText = 'position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);left:8px;z-index:99999;background:rgba(20,16,12,0.94);color:#fff;font-family:monospace;font-size:11px;line-height:1.5;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.4);max-width:92vw;';
-    var open = false;
-    function sessionRaw() {
-      try { return sessionStorage.getItem('courtyard:pwa-session'); } catch (e) { return 'ERR: ' + e.message; }
-    }
-    function render() {
-      var hasClass = document.documentElement.classList.contains('pwa-standalone');
-      var rows = [
-        ['display-mode standalone', window.matchMedia('(display-mode: standalone)').matches],
-        ['ios navigator.standalone', navigator.standalone === true],
-        ['window.__COURTYARD_PWA_SESSION__', window.__COURTYARD_PWA_SESSION__],
-        ['sessionStorage raw', sessionRaw()],
-        ['html.pwa-standalone class', hasClass],
-        ['html.pwa-settling class (should be false by now)', document.documentElement.classList.contains('pwa-settling')],
-        ['location.search', location.search || '(empty)'],
-        ['location.href', location.href],
-        ['innerWidth', window.innerWidth],
-        ['visualViewport.width', window.visualViewport ? window.visualViewport.width : 'n/a'],
-        ['visualViewport.scale', window.visualViewport ? window.visualViewport.scale : 'n/a'],
-        ['screen.width', window.screen ? window.screen.width : 'n/a'],
-        ['devicePixelRatio', window.devicePixelRatio || 'n/a'],
-        ['--pwa-device-width', getComputedStyle(document.documentElement).getPropertyValue('--pwa-device-width') || '(unset)'],
-        ['html computed width', document.documentElement.getBoundingClientRect().width],
-        ['body computed width', document.body.getBoundingClientRect().width]
-      ];
-      var lines = open
-        ? rows.map(function (r) { return '<div>' + r[0] + ': ' + r[1] + '</div>'; }).join('')
-        : '';
-      badge.innerHTML =
-        '<button type="button" style="display:block;width:100%;padding:6px 10px;background:transparent;color:' +
-        (hasClass ? '#9bbf7e' : '#e0a0ad') +
-        ';border:none;font-family:monospace;font-size:11px;font-weight:700;text-align:left;">PWA: ' +
-        (hasClass ? 'STANDALONE DETECTED' : 'NOT DETECTED') + ' ' + (open ? '\u25B2' : '\u25BC') + '</button>' +
-        (open ? '<div style="padding:0 10px 10px 10px;word-break:break-all;">' + lines + '</div>' : '');
-    }
-    badge.addEventListener('click', function () { open = !open; render(); });
-    render();
-    document.body.appendChild(badge);
-  }
-  mountPwaDebugBadge();
-  /* ---------------- end TEMPORARY debug badge ---------------- */
 })();
