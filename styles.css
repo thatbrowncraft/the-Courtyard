@@ -1023,6 +1023,18 @@
   html.pwa-standalone{ width:100%; max-width:var(--pwa-device-width, 100vw); }
   html.pwa-standalone body{ width:100%; max-width:var(--pwa-device-width, 100%); margin:0; overflow-x:hidden; }
 
+  /* Session 32: briefly hides the page on cold start while the browser's
+     own compositor is still zoomed out from the ~980px-assumption bug
+     (see index.html's bootstrap script for the full explanation and the
+     resize-or-timeout logic that removes this class). visibility, not
+     opacity or display:none, so layout/JS keep running underneath and
+     nothing has to be recalculated when it's revealed — this only ever
+     controls whether the settled frame gets painted. html's own
+     background-color (set above, matches manifest background_color)
+     still shows through, so this reads as a continuation of the native
+     splash rather than a blank flash. */
+  html.pwa-standalone.pwa-settling{ visibility:hidden; }
+
   html.pwa-standalone nav{ justify-content:flex-start; overflow-x:auto; gap:16px; }
   html.pwa-standalone nav button{ font-size:0.66rem; padding:10px 4px; }
   html.pwa-standalone .brand span.brand-text{ display:none; }

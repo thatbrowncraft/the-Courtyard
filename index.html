@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -86,6 +86,46 @@
           document.documentElement.style.setProperty('--pwa-device-width', window.screen.width + 'px');
         }
       } catch (e) { /* no screen API — CSS falls back to 100vw, previous behavior */ }
+
+      /* Cold-start zoom flash (Session 32): on-device diagnostics after the
+         width fix above showed html/body already computing the CORRECT
+         412px — the width fix works — but the browser was still applying
+         a visualViewport.scale of ~0.42 on the very first frame, as if it
+         had assumed a legacy ~980px "no mobile viewport" page and zoomed
+         out to fit it, then corrected itself shortly after on its own
+         (a follow-up screenshot from the same launch showed scale back to
+         1 and innerWidth back to ~411, unprompted).
+
+         That scale is a native/compositor-level property — it isn't
+         something any CSS width/max-width rule, or this page's own DOM,
+         can read or set correctly, and deliberately nothing here tries
+         to counter-zoom it (see the removed Session-30 mechanism above
+         and in pwa.js for why that approach is banned). The only thing
+         actually within this page's control is to not show that broken
+         first frame: hold the page hidden (see html.pwa-standalone
+         .pwa-settling in styles.css) until the browser itself reports a
+         resize — the actual signal that it has recalculated — or until a
+         short capped timeout passes, whichever happens first, so a slow
+         or absent correction never hides the app indefinitely. This is
+         a one-shot visibility gate, not a measurement loop: it never
+         reads a value it wrote, it just waits for the browser's own
+         event. The exact 500ms cap is a first guess pending on-device
+         timing — tell me how long the real correction takes and it can
+         be tightened or loosened. */
+      document.documentElement.classList.add('pwa-settling');
+      var settled = false;
+      function revealAfterSettle() {
+        if (settled) return;
+        settled = true;
+        document.documentElement.classList.remove('pwa-settling');
+      }
+      try {
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', revealAfterSettle, { once: true });
+        }
+        window.addEventListener('resize', revealAfterSettle, { once: true });
+      } catch (e) { /* ignore — safety-net timeout below still applies */ }
+      setTimeout(revealAfterSettle, 500);
     }
   })();
 </script>
