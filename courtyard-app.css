@@ -1,221 +1,46 @@
-/*
-  Kanha Ji's Courtyard — installed-app layout lock
+/* Installed-app-only presentation layer. Normal website is untouched. */
+html.courtyard-app-mode { --courtyard-app-width:100%; --courtyard-app-zoom:1; overflow-x:hidden; }
+html.courtyard-app-mode body { overflow-x:hidden; overflow-y:auto; touch-action:pan-y; }
 
-  IMPORTANT:
-  This layer only matches html.courtyard-app-mode, so the normal website
-  keeps using styles.css exactly as before.
-
-  The key fix is --courtyard-app-width. If Chrome's Desktop-site setting
-  reports a ~980px layout viewport, the app body is still explicitly sized
-  to the real visual phone width supplied by courtyard-app.js.
-*/
-
-html.courtyard-app-mode {
-  --courtyard-app-width: 100vw;
-  width: var(--courtyard-app-width);
-  max-width: var(--courtyard-app-width);
-  min-width: 0;
-  overflow-x: hidden;
+/* Critical Desktop-site fix: keep a mobile logical width, then scale that
+   logical page back up so it fills the physical standalone window. */
+html.courtyard-app-mode.courtyard-wide-viewport body {
+  width:var(--courtyard-app-width);
+  max-width:var(--courtyard-app-width);
+  min-width:0;
+  margin-left:0;
+  margin-right:0;
+  zoom:var(--courtyard-app-zoom);
 }
 
-html.courtyard-app-mode body {
-  width: var(--courtyard-app-width);
-  max-width: var(--courtyard-app-width);
-  min-width: 0;
-  margin: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  touch-action: pan-y;
-}
+/* Existing mobile presentation, applied unconditionally in app mode. */
+html.courtyard-app-mode nav{justify-content:flex-start;overflow-x:auto;gap:16px;-webkit-overflow-scrolling:touch;}
+html.courtyard-app-mode nav button{flex:0 0 auto;font-size:.66rem;padding:10px 4px;}
+html.courtyard-app-mode .brand span.brand-text{display:none;}
+html.courtyard-app-mode .section-shell{padding:44px 20px 70px;box-sizing:border-box;}
+html.courtyard-app-mode #banyan{opacity:.15;width:150px;}
+html.courtyard-app-mode .emotion-item{padding:20px 6px;font-size:1.22rem;}
+html.courtyard-app-mode .quick-links{gap:20px;}
+html.courtyard-app-mode .quick-links button{padding:8px 2px;}
+html.courtyard-app-mode #soundToggle{width:38px;height:38px;}
+html.courtyard-app-mode #soundPanel button{padding:14px 18px;font-size:.95rem;}
+html.courtyard-app-mode .switch{width:46px;height:27px;}
+html.courtyard-app-mode .switch::after{width:19px;height:19px;}
+html.courtyard-app-mode .switch.on::after{transform:translateX(19px);}
+html.courtyard-app-mode .theme-dot{width:28px;height:28px;}
+html.courtyard-app-mode .setting-row{padding:24px 0;gap:14px;}
+html.courtyard-app-mode .chapter-row{padding:22px 4px;}
+html.courtyard-app-mode .back-link{padding:12px 20px;}
+html.courtyard-app-mode header{padding-left:20px;padding-right:20px;padding-top:calc(20px + env(safe-area-inset-top,0px));flex-wrap:wrap;row-gap:10px;}
+html.courtyard-app-mode footer{padding-bottom:calc(32px + env(safe-area-inset-bottom,0px));}
+html.courtyard-app-mode #soundControl{left:calc(24px + env(safe-area-inset-left,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));}
+html.courtyard-app-mode .pwa-banner{bottom:calc(18px + env(safe-area-inset-bottom,0px));}
+html.courtyard-app-mode #krishna-corner{transform:scale(.82);transform-origin:bottom right;bottom:14px;right:14px;}
 
-/* Force the shared page's major containers to use the phone width. */
-html.courtyard-app-mode header,
-html.courtyard-app-mode main,
-html.courtyard-app-mode footer,
-html.courtyard-app-mode .view,
-html.courtyard-app-mode .hero,
-html.courtyard-app-mode .section-shell,
-html.courtyard-app-mode .emotion-list,
-html.courtyard-app-mode .quick-links {
-  max-width: var(--courtyard-app-width);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Phone navigation, applied without relying on a viewport media query. */
-html.courtyard-app-mode header {
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: calc(20px + env(safe-area-inset-top, 0px));
-  flex-wrap: wrap;
-  row-gap: 10px;
-}
-
-html.courtyard-app-mode nav {
-  justify-content: flex-start;
-  overflow-x: auto;
-  gap: 16px;
-  max-width: 100%;
-  min-width: 0;
-  flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
-}
-
-html.courtyard-app-mode nav button {
-  flex: 0 0 auto;
-  font-size: 0.66rem;
-  padding: 10px 4px;
-}
-
-html.courtyard-app-mode .brand span.brand-text {
-  display: none;
-}
-
-/* Same phone-first spacing used by the existing mobile design. */
-html.courtyard-app-mode .hero {
-  padding: 96px 20px 16px;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-html.courtyard-app-mode .section-shell {
-  padding: 44px 20px 70px;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-html.courtyard-app-mode .emotion-list {
-  padding: 0 20px;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-html.courtyard-app-mode .emotion-item {
-  padding: 20px 6px;
-  font-size: 1.22rem;
-}
-
-html.courtyard-app-mode .quick-links {
-  gap: 20px;
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-html.courtyard-app-mode .quick-links button {
-  padding: 8px 2px;
-}
-
-/* Cards/rows must be allowed to shrink instead of preserving desktop widths. */
-html.courtyard-app-mode .card,
-html.courtyard-app-mode .continue-card,
-html.courtyard-app-mode .verse-frontispiece,
-html.courtyard-app-mode .verse-section,
-html.courtyard-app-mode .chapter-row,
-html.courtyard-app-mode .verse-row,
-html.courtyard-app-mode .setting-row {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-html.courtyard-app-mode .setting-row {
-  padding: 24px 0;
-  gap: 14px;
-  min-width: 0;
-}
-
-html.courtyard-app-mode .setting-row > * {
-  min-width: 0;
-}
-
-html.courtyard-app-mode .chapter-row {
-  padding: 22px 4px;
-}
-
-html.courtyard-app-mode .back-link {
-  padding: 12px 20px;
-}
-
-html.courtyard-app-mode #soundToggle {
-  width: 38px;
-  height: 38px;
-}
-
-html.courtyard-app-mode #soundPanel button {
-  padding: 14px 18px;
-  font-size: 0.95rem;
-}
-
-html.courtyard-app-mode .switch {
-  width: 46px;
-  height: 27px;
-  flex: 0 0 auto;
-}
-
-html.courtyard-app-mode .switch::after {
-  width: 19px;
-  height: 19px;
-}
-
-html.courtyard-app-mode .switch.on::after {
-  transform: translateX(19px);
-}
-
-html.courtyard-app-mode .theme-dot {
-  width: 28px;
-  height: 28px;
-}
-
-html.courtyard-app-mode #banyan {
-  opacity: 0.15;
-  width: 150px;
-}
-
-/* Fixed UI elements need the physical phone width as their containing area. */
-html.courtyard-app-mode #stars,
-html.courtyard-app-mode #courtyard,
-html.courtyard-app-mode #atmosphere,
-html.courtyard-app-mode #ambient {
-  width: var(--courtyard-app-width);
-  max-width: var(--courtyard-app-width);
-  left: 0;
-  right: auto;
-}
-
-html.courtyard-app-mode #krishna-corner {
-  transform: scale(0.82);
-  transform-origin: bottom right;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  right: 14px;
-}
-
-html.courtyard-app-mode #soundControl {
-  left: calc(24px + env(safe-area-inset-left, 0px));
-  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
-}
-
-html.courtyard-app-mode .pwa-banner {
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-  max-width: calc(var(--courtyard-app-width) - 32px);
-}
-
-html.courtyard-app-mode footer {
-  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
-}
-
-@media (max-width: 360px) {
-  html.courtyard-app-mode .section-shell {
-    padding: 36px 16px 64px;
-  }
-  html.courtyard-app-mode .hero {
-    padding: 96px 16px 16px;
-  }
-  html.courtyard-app-mode .emotion-list {
-    padding: 0 16px;
-  }
-  html.courtyard-app-mode #soundPanel {
-    min-width: 168px;
-  }
-  html.courtyard-app-mode nav {
-    gap: 12px;
-  }
+@media (max-width:360px){
+html.courtyard-app-mode .section-shell{padding:36px 16px 64px;}
+html.courtyard-app-mode .hero{padding:96px 16px 16px;}
+html.courtyard-app-mode .emotion-list{padding:0 16px;}
+html.courtyard-app-mode #soundPanel{min-width:168px;}
+html.courtyard-app-mode nav{gap:12px;}
 }
