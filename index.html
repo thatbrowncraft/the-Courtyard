@@ -4,50 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>
-/* Courtyard mobile lock: Chrome Android's Desktop site deliberately changes
-   the User-Agent and forces a wide virtual viewport. Remember that this
-   browser was mobile on the previous load, then restore a phone-sized
-   viewport when Chrome switches to Desktop site. This runs before CSS. */
+/* Courtyard PWA mobile lock.
+   The installed app is intentionally a phone-first experience. Chrome
+   Android can force a desktop User-Agent and a ~980px layout viewport when
+   Desktop site is enabled. In standalone mode we therefore opt into the
+   Courtyard mobile layout unconditionally and, when possible, size the
+   viewport from the visual viewport rather than Chrome's forced layout width. */
 (function(){
   try {
-    var cookie = document.cookie.indexOf('courtyard-mobile-seen=1') !== -1;
-    var ua = navigator.userAgent || '';
-    var mobileUA = /Android|iPhone|iPad|iPod/i.test(ua);
-    if (mobileUA) {
-      document.cookie = 'courtyard-mobile-seen=1; path=/; max-age=31536000; SameSite=Lax';
-    }
-    var standalone = false;
-    try {
-      standalone = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-      standalone = standalone || !!navigator.standalone;
-    } catch(e) {}
+    var standalone = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    standalone = standalone || !!navigator.standalone;
 
-    /* Installed Android PWAs are the important special case here. Chrome's
-       Desktop site can spoof the UA and expose a wide CSS viewport, but the
-       standalone window is still a touch-first phone app. Do not depend on
-       screen.width for this case because Desktop site can change that value. */
-    var touchPhone = navigator.maxTouchPoints > 0;
-    var likelyPhone = mobileUA || (touchPhone && Math.min(screen.width || 9999, screen.height || 9999) <= 600);
-    var mobilePWA = standalone && touchPhone;
-    if (likelyPhone || mobilePWA) document.documentElement.classList.add('courtyard-mobile-device');
+    if (standalone) {
+      document.documentElement.classList.add('courtyard-mobile-device');
 
-    /* In Chrome Desktop site, the UA loses its mobile markers and the
-       browser normally forces a ~980px viewport. If we know this origin was
-       previously opened as a mobile device, explicitly restore a viewport
-       based on the device screen width. */
-    if (!mobileUA && cookie) {
-      var w = Math.min(screen.width || 412, screen.height || 736);
-      w = Math.max(320, Math.min(600, Math.round(w)));
       var vp = document.querySelector('meta[name="viewport"]');
       if (vp) {
-        vp.setAttribute('content', 'width=' + w + ', initial-scale=1, maximum-scale=1, viewport-fit=cover');
-      } else {
-        vp = document.createElement('meta');
-        vp.name = 'viewport';
-        vp.content = 'width=' + w + ', initial-scale=1, maximum-scale=1, viewport-fit=cover';
-        document.head.appendChild(vp);
+        var visualWidth = window.visualViewport && window.visualViewport.width;
+        var screenWidth = Math.min(screen.width || 0, screen.height || 0);
+        var candidate = (visualWidth && isFinite(visualWidth) && visualWidth >= 280 && visualWidth <= 700) ? visualWidth : screenWidth;
+        if (candidate && candidate >= 280 && candidate <= 700) {
+          vp.setAttribute('content', 'width=' + Math.round(candidate) + ', initial-scale=1, maximum-scale=1, viewport-fit=cover');
+        } else {
+          vp.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+        }
       }
-      document.documentElement.classList.add('courtyard-mobile-device');
     }
   } catch(e) {}
 })();
