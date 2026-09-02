@@ -910,3 +910,21 @@
     touch-action: pan-x pan-y; /* Blocks pinch-to-zoom and gestures on mobile */
   }
 }
+/* Forces mobile layout on touchscreen devices even if 'Desktop site' is enabled */
+@media (pointer: coarse), (max-device-width: 1024px) {
+  html, body {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Expands squeezed inner containers to fill phone screen */
+  main, section, container, 
+  .verse-nav, .about-intro, .about-close-line {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    box-sizing: border-box !important;
+  }
+}
