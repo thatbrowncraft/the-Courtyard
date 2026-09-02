@@ -16,8 +16,20 @@
     if (mobileUA) {
       document.cookie = 'courtyard-mobile-seen=1; path=/; max-age=31536000; SameSite=Lax';
     }
-    var likelyPhone = mobileUA || (navigator.maxTouchPoints > 0 && Math.min(screen.width || 9999, screen.height || 9999) <= 600);
-    if (likelyPhone) document.documentElement.classList.add('courtyard-mobile-device');
+    var standalone = false;
+    try {
+      standalone = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      standalone = standalone || !!navigator.standalone;
+    } catch(e) {}
+
+    /* Installed Android PWAs are the important special case here. Chrome's
+       Desktop site can spoof the UA and expose a wide CSS viewport, but the
+       standalone window is still a touch-first phone app. Do not depend on
+       screen.width for this case because Desktop site can change that value. */
+    var touchPhone = navigator.maxTouchPoints > 0;
+    var likelyPhone = mobileUA || (touchPhone && Math.min(screen.width || 9999, screen.height || 9999) <= 600);
+    var mobilePWA = standalone && touchPhone;
+    if (likelyPhone || mobilePWA) document.documentElement.classList.add('courtyard-mobile-device');
 
     /* In Chrome Desktop site, the UA loses its mobile markers and the
        browser normally forces a ~980px viewport. If we know this origin was
