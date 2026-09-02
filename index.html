@@ -3,6 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+/* Courtyard mobile lock: Chrome Android's Desktop site deliberately changes
+   the User-Agent and forces a wide virtual viewport. Remember that this
+   browser was mobile on the previous load, then restore a phone-sized
+   viewport when Chrome switches to Desktop site. This runs before CSS. */
+(function(){
+  try {
+    var cookie = document.cookie.indexOf('courtyard-mobile-seen=1') !== -1;
+    var ua = navigator.userAgent || '';
+    var mobileUA = /Android|iPhone|iPad|iPod/i.test(ua);
+    if (mobileUA) {
+      document.cookie = 'courtyard-mobile-seen=1; path=/; max-age=31536000; SameSite=Lax';
+    }
+    var likelyPhone = mobileUA || (navigator.maxTouchPoints > 0 && Math.min(screen.width || 9999, screen.height || 9999) <= 600);
+    if (likelyPhone) document.documentElement.classList.add('courtyard-mobile-device');
+
+    /* In Chrome Desktop site, the UA loses its mobile markers and the
+       browser normally forces a ~980px viewport. If we know this origin was
+       previously opened as a mobile device, explicitly restore a viewport
+       based on the device screen width. */
+    if (!mobileUA && cookie) {
+      var w = Math.min(screen.width || 412, screen.height || 736);
+      w = Math.max(320, Math.min(600, Math.round(w)));
+      var vp = document.querySelector('meta[name="viewport"]');
+      if (vp) {
+        vp.setAttribute('content', 'width=' + w + ', initial-scale=1, maximum-scale=1, viewport-fit=cover');
+      } else {
+        vp = document.createElement('meta');
+        vp.name = 'viewport';
+        vp.content = 'width=' + w + ', initial-scale=1, maximum-scale=1, viewport-fit=cover';
+        document.head.appendChild(vp);
+      }
+      document.documentElement.classList.add('courtyard-mobile-device');
+    }
+  } catch(e) {}
+})();
+</script>
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">

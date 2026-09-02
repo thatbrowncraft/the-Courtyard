@@ -1348,3 +1348,64 @@
     bottom:8px;
   }
 }
+
+/* ================= MOBILE DEVICE FALLBACK =================
+   The class is set before the stylesheet loads when Android Chrome is using
+   Desktop site. It is intentionally limited to touch-first phone-sized
+   devices and does not affect normal desktop browsers. */
+html.courtyard-mobile-device,
+html.courtyard-mobile-device body{
+  min-width:0;
+  overflow-x:hidden;
+}
+html.courtyard-mobile-device body{
+  min-height:100dvh;
+  height:auto;
+  overflow-y:visible;
+  -webkit-text-size-adjust:100%;
+  touch-action:pan-y;
+}
+html.courtyard-mobile-device header{
+  width:100%; min-height:58px; padding:10px 14px; gap:12px; align-items:center;
+}
+html.courtyard-mobile-device .brand span.brand-text{display:none;}
+html.courtyard-mobile-device nav{
+  flex:1 1 auto; min-width:0; width:auto; flex-wrap:nowrap;
+  justify-content:flex-start; gap:17px; overflow-x:auto; overflow-y:hidden;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:2px 2px 4px;
+}
+html.courtyard-mobile-device nav::-webkit-scrollbar{display:none;}
+html.courtyard-mobile-device nav button{
+  flex:0 0 auto; min-height:38px; padding:9px 2px 8px;
+  font-size:.68rem; letter-spacing:.11em; white-space:nowrap;
+}
+html.courtyard-mobile-device main{width:100%; min-height:calc(100dvh - 58px);}
+html.courtyard-mobile-device .hero{width:100%; max-width:600px; padding:72px 18px 16px;}
+html.courtyard-mobile-device .hero h1{font-size:clamp(1.75rem,8vw,2.15rem); line-height:1.2;}
+html.courtyard-mobile-device .hero p{max-width:430px; font-size:1.02rem; line-height:1.75;}
+html.courtyard-mobile-device .emotion-list{width:100%; max-width:440px; margin:42px auto 0; padding:0 18px;}
+html.courtyard-mobile-device .emotion-item{min-height:52px; display:flex; align-items:center; justify-content:center; padding:14px 4px; font-size:1.12rem; line-height:1.35;}
+html.courtyard-mobile-device .quick-links{max-width:100%; gap:13px; padding:0 18px 96px; margin-top:54px;}
+html.courtyard-mobile-device .section-shell{width:100%; max-width:840px; padding:42px 18px 88px;}
+html.courtyard-mobile-device .section-shell h2{font-size:1.55rem;}
+html.courtyard-mobile-device .section-sub{font-size:.92rem; line-height:1.7; margin-bottom:32px;}
+html.courtyard-mobile-device .card,
+html.courtyard-mobile-device .continue-card{width:100%; max-width:100%;}
+html.courtyard-mobile-device .chapter-row{width:100%; gap:12px; padding:18px 2px;}
+html.courtyard-mobile-device .chapter-title{min-width:0; overflow-wrap:anywhere;}
+html.courtyard-mobile-device .verse-title,
+html.courtyard-mobile-device .verse-sanskrit,
+html.courtyard-mobile-device .verse-translit{overflow-wrap:anywhere;}
+html.courtyard-mobile-device .verse-title{font-size:1.35rem; line-height:1.3;}
+html.courtyard-mobile-device .verse-sanskrit{font-size:1.16rem; line-height:1.75;}
+html.courtyard-mobile-device .verse-translit{font-size:.88rem; line-height:1.7;}
+html.courtyard-mobile-device .verse-translation{font-size:1.08rem; line-height:1.85;}
+html.courtyard-mobile-device .verse-section p,
+html.courtyard-mobile-device .verse-section li{max-width:100%; font-size:1.03rem; line-height:1.85;}
+html.courtyard-mobile-device .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+html.courtyard-mobile-device #soundControl{left:12px; bottom:12px;}
+html.courtyard-mobile-device #soundToggle{width:40px; height:40px;}
+html.courtyard-mobile-device #soundPanel{left:0; bottom:50px; width:min(210px,calc(100vw - 28px)); min-width:0; max-width:calc(100vw - 28px);}
+html.courtyard-mobile-device #krishna-corner{right:10px; bottom:10px; transform:scale(.68); transform-origin:bottom right;}
+html.courtyard-mobile-device #arrivalTitle{width:100%; margin-top:38px; padding:0 18px;}
+html.courtyard-mobile-device .pwa-banner{left:12px; right:12px; bottom:10px; width:auto; max-width:none;}
