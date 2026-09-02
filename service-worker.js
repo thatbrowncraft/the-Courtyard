@@ -246,7 +246,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     return response;
-        }
+        
         } catch (e) {
           const cache = await caches.open(PRECACHE);
           const cached = await cache.match(resolveScoped('index.html'));
