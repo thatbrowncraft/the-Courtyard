@@ -10,6 +10,46 @@
 (function () {
   'use strict';
 
+  /* ---------------- standalone-PWA viewport correction ----------------
+     Confirmed necessary (not speculative anymore — see the on-device debug
+     badge readings): with Chrome's per-origin "Request desktop site" on,
+     the installed app measured innerWidth 980 and visualViewport.scale
+     ~0.42; with it off, innerWidth 411 and scale 1, and the app rendered
+     perfectly. So the 980px forced-desktop-viewport bug is real on this
+     device, and this is what corrects it back to true size, independent
+     of that per-origin browser setting.
+
+     window.visualViewport.scale is Chrome's own report of how much it
+     auto-shrank the forced-980px layout to fit the real screen, so the
+     fix is a counter-zoom of 1 / scale on the document root: the two
+     multiply out to ~1, i.e. true physical size. `zoom` (not
+     `transform: scale()`) is used deliberately — a transform on an
+     ancestor creates a new containing block for anything position:fixed
+     (nav, sound controls, Krishna's corner, the offline/update banners),
+     which would silently stop tracking the real screen; `zoom` has no such
+     side effect.
+
+     Gated entirely on html.pwa-standalone (set synchronously in
+     index.html's inline bootstrap script), so this is a complete no-op in
+     every normal browser tab and in DevTools device emulation — neither
+     ever carries that class — regardless of "Request desktop site" or any
+     other Chrome setting on this device. */
+  window.__COURTYARD_APPLIED_ZOOM__ = '(not evaluated)';
+  function correctStandaloneViewportZoom() {
+    if (!document.documentElement.classList.contains('pwa-standalone')) return;
+    if (!window.visualViewport) return;
+    function apply() {
+      var scale = window.visualViewport.scale || 1;
+      var target = (scale && Math.abs(scale - 1) > 0.02) ? String(1 / scale) : '';
+      document.documentElement.style.zoom = target;
+      window.__COURTYARD_APPLIED_ZOOM__ = target || '1 (no correction needed)';
+    }
+    apply();
+    window.visualViewport.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', apply);
+  }
+  correctStandaloneViewportZoom();
+
   /* ---------------- offline banner ----------------
      A calm, ambient note — never a browser error, never demanding action. */
   function showOfflineBanner() {
@@ -188,7 +228,8 @@
         ['location.href', location.href],
         ['innerWidth', window.innerWidth],
         ['visualViewport.width', window.visualViewport ? window.visualViewport.width : 'n/a'],
-        ['visualViewport.scale', window.visualViewport ? window.visualViewport.scale : 'n/a']
+        ['visualViewport.scale', window.visualViewport ? window.visualViewport.scale : 'n/a'],
+        ['applied zoom (fix)', window.__COURTYARD_APPLIED_ZOOM__]
       ];
       var lines = open
         ? rows.map(function (r) { return '<div>' + r[0] + ': ' + r[1] + '</div>'; }).join('')
