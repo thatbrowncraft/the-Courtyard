@@ -4,16 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>
-/* PWA-only viewport correction — installed standalone app only.
-   Some Android home-screen (WebAPK/TWA) shells miscompute
-   "width=device-width" once launched standalone, handing the page a
-   layout viewport wider than the phone's real CSS width (the layout
-   then renders as if on a bigger screen). This block only ever runs
-   when the app is actually running standalone/home-screen; a normal
-   Chrome tab or any desktop browser hits the early return on the first
-   line and is left completely untouched. It must run synchronously
+/* PWA-only viewport handling — installed standalone app only.
+   A normal Chrome tab or any desktop browser hits the early return on
+   the first line below and is left completely untouched; nothing here
+   runs outside standalone/home-screen mode. It must run synchronously
    here, before styles.css and app.js do any layout work, so there's no
-   flash of the wrong width. See pwa.js for the rest of the PWA glue. */
+   flash of the wrong width. See pwa.js for the rest of the PWA glue.
+
+   Two things happen once standalone is confirmed:
+   1. Bug fix: some Android home-screen (WebAPK/TWA) shells miscompute
+      "width=device-width", handing the page a layout viewport wider
+      than the phone's real CSS width. We read the true width straight
+      from window.screen instead of trusting the keyword.
+   2. Mobile-only lock: the Courtyard's installed app is meant to always
+      present its mobile layout — the compact nav and touch-sized
+      controls that styles.css already switches to at 720px and below
+      — even if it's ever installed on a desktop or tablet with a wider
+      screen. So the corrected width is capped at MOBILE_MAX (matching
+      that existing @media (max-width: 720px) breakpoint) rather than
+      passing through an arbitrarily large screen width. Real phones
+      are always well under that cap, so this cap changes nothing for
+      them — it only kicks in on a wider, non-phone standalone window. */
 (function () {
   var isStandalone =
     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
@@ -23,17 +34,20 @@
   var meta = document.querySelector('meta[name="viewport"]');
   if (!meta) return;
 
-  function applyCorrectWidth() {
+  var MOBILE_MAX = 720; // keep in sync with styles.css's mobile breakpoint
+
+  function applyMobileWidth() {
     var cssWidth = window.screen && window.screen.width;
-    if (!cssWidth || cssWidth < 200 || cssWidth > 900) return; // sanity guard
-    meta.setAttribute('content', 'width=' + cssWidth + ', initial-scale=1.0, viewport-fit=cover');
+    if (!cssWidth || cssWidth < 200) return; // sanity guard
+    var width = Math.min(cssWidth, MOBILE_MAX);
+    meta.setAttribute('content', 'width=' + width + ', initial-scale=1.0, viewport-fit=cover');
   }
 
-  applyCorrectWidth();
+  applyMobileWidth();
   // Manifest locks orientation to portrait, but some devices still fire
   // this once on launch before settling — cheap to handle, never fires
   // outside standalone mode.
-  window.addEventListener('orientationchange', applyCorrectWidth);
+  window.addEventListener('orientationchange', applyMobileWidth);
 })();
 </script>
 <title>Kanha Ji's Courtyard</title>
@@ -45,8 +59,9 @@
      service-worker.js — neither touches routing, layout, or app.js.
      The one exception is the small inline script right after the
      viewport meta tag above: it only activates in standalone
-     (installed) mode to correct the layout viewport width, and is a
-     no-op in a normal browser tab or on desktop. -->
+     (installed) mode, where it corrects the layout viewport width and
+     caps it so the installed app always renders the mobile layout. A
+     normal browser tab, on any device, is a no-op and untouched. -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#241811">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
