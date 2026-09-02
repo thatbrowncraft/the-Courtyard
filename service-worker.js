@@ -18,7 +18,7 @@
   would go against "avoid unnecessary downloads." An ambience file is only
   ever re-fetched if its filename changes, or if someone clears site data.
 */
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 
 const PRECACHE = `courtyard-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `courtyard-data-${CACHE_VERSION}`;
@@ -36,6 +36,7 @@ const CURRENT_CACHES = new Set([PRECACHE, DATA_CACHE, FONT_CACHE, AUDIO_CACHE]);
 //  - assets/images/* — currently unused, cached on demand if that changes
 const PRECACHE_URLS = [
   'index.html',
+  'courtyard-app.html',
   'styles.css',
   'app.js',
   'pwa.js',
@@ -239,19 +240,34 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
-        try {
-    const response = await fetch(new Request(request.url, { cache: 'no-cache' }));
-
-    if (response && response.ok) {
         const cache = await caches.open(PRECACHE);
-        await cache.put(resolveScoped('index.html'), response.clone());
-    }
+        try {
+          const response = await fetch(new Request(request.url, { cache: 'no-cache' }));
 
-    return response;
+          if (response && response.ok) {
+            // Cache under the URL that was actually requested. Both
+            // index.html and courtyard-app.html (the installed app's
+            // start_url, which sets the app-mode flag before redirecting)
+            // need their own cached copy — collapsing both onto a single
+            // 'index.html' key meant a fetch of one could silently
+            // overwrite the other's offline fallback.
+            await cache.put(request.url, response.clone());
+          }
+
+          return response;
         } catch (e) {
-          const cache = await caches.open(PRECACHE);
-          const cached = await cache.match(resolveScoped('index.html'));
+          // Prefer a cached copy of the exact page that was requested —
+          // critical so a cold, offline launch of courtyard-app.html still
+          // gets its redirect script (and therefore still sets app-mode)
+          // instead of silently falling through to index.html.
+          const cached = await cache.match(request.url);
           if (cached) return cached;
+
+          // Only if that specific page was never cached, fall back to the
+          // app shell itself.
+          const shellCached = await cache.match(resolveScoped('index.html'));
+          if (shellCached) return shellCached;
+
           return new Response(
             '<!doctype html><meta charset="utf-8"><title>Kanha Ji\'s Courtyard</title>' +
               '<body style="background:#160F0A;color:#F6E9CE;font-family:Georgia,serif;' +
