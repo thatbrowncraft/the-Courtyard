@@ -87,45 +87,67 @@
         }
       } catch (e) { /* no screen API — CSS falls back to 100vw, previous behavior */ }
 
-      /* Cold-start zoom flash (Session 32): on-device diagnostics after the
-         width fix above showed html/body already computing the CORRECT
-         412px — the width fix works — but the browser was still applying
-         a visualViewport.scale of ~0.42 on the very first frame, as if it
+      /* Cold-start zoom flash (Session 32, revised): on-device diagnostics
+         showed html/body already computing the CORRECT 412px — the width
+         fix works — but the browser was still applying a
+         visualViewport.scale of ~0.42 on the very first frame, as if it
          had assumed a legacy ~980px "no mobile viewport" page and zoomed
-         out to fit it, then corrected itself shortly after on its own
-         (a follow-up screenshot from the same launch showed scale back to
-         1 and innerWidth back to ~411, unprompted).
+         out to fit it, then corrected itself shortly after on its own.
 
          That scale is a native/compositor-level property — it isn't
          something any CSS width/max-width rule, or this page's own DOM,
-         can read or set correctly, and deliberately nothing here tries
-         to counter-zoom it (see the removed Session-30 mechanism above
-         and in pwa.js for why that approach is banned). The only thing
-         actually within this page's control is to not show that broken
-         first frame: hold the page hidden (see html.pwa-standalone
-         .pwa-settling in styles.css) until the browser itself reports a
-         resize — the actual signal that it has recalculated — or until a
-         short capped timeout passes, whichever happens first, so a slow
-         or absent correction never hides the app indefinitely. This is
-         a one-shot visibility gate, not a measurement loop: it never
-         reads a value it wrote, it just waits for the browser's own
-         event. The exact 500ms cap is a first guess pending on-device
-         timing — tell me how long the real correction takes and it can
-         be tightened or loosened. */
+         can read or set correctly, and nothing here tries to counter-zoom
+         it (see the removed Session-30 mechanism above and in pwa.js for
+         why that approach is banned).
+
+         First attempt at hiding the broken frame trusted a `resize` event
+         (or a blind 500ms timeout) as the signal that it was safe to
+         reveal. On-device testing showed that's not reliable: a resize
+         event can fire before the scale has actually corrected, and the
+         broken frame was still visible when it was captured. So this
+         checks the ACTUAL numbers — innerWidth and visualViewport.scale,
+         compared against the independent screen.width anchor already
+         established above — rather than trusting any one event to mean
+         "done." It's still not a feedback loop: it only ever reads
+         values the browser reports on its own, never a value this page
+         wrote, so there's nothing to reinforce or diverge. Polls briefly
+         while hidden, reveals the instant the numbers look right, and a
+         2-second hard cap guarantees the app is never stuck hidden if a
+         device never reports a settled state at all. */
       document.documentElement.classList.add('pwa-settling');
       var settled = false;
+      var pollId = null;
       function revealAfterSettle() {
         if (settled) return;
         settled = true;
+        if (pollId !== null) clearInterval(pollId);
         document.documentElement.classList.remove('pwa-settling');
       }
-      try {
-        if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', revealAfterSettle, { once: true });
-        }
-        window.addEventListener('resize', revealAfterSettle, { once: true });
-      } catch (e) { /* ignore — safety-net timeout below still applies */ }
-      setTimeout(revealAfterSettle, 500);
+      function looksSettled() {
+        var target = window.screen && window.screen.width;
+        if (!target) return true; // can't verify on this device — don't hide indefinitely
+        var iw = window.innerWidth;
+        var scale = window.visualViewport ? window.visualViewport.scale : 1;
+        return Math.abs(iw - target) <= 8 && Math.abs(scale - 1) <= 0.05;
+      }
+      if (looksSettled()) {
+        revealAfterSettle();
+      } else {
+        try {
+          if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', function () {
+              if (looksSettled()) revealAfterSettle();
+            });
+          }
+          window.addEventListener('resize', function () {
+            if (looksSettled()) revealAfterSettle();
+          });
+        } catch (e) { /* ignore — polling and the hard cap below still apply */ }
+        pollId = setInterval(function () {
+          if (looksSettled()) revealAfterSettle();
+        }, 50);
+        setTimeout(revealAfterSettle, 2000);
+      }
     }
   })();
 </script>

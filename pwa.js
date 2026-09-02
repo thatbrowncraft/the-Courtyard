@@ -209,6 +209,7 @@
         ['window.__COURTYARD_PWA_SESSION__', window.__COURTYARD_PWA_SESSION__],
         ['sessionStorage raw', sessionRaw()],
         ['html.pwa-standalone class', hasClass],
+        ['html.pwa-settling class (should be false by now)', document.documentElement.classList.contains('pwa-settling')],
         ['location.search', location.search || '(empty)'],
         ['location.href', location.href],
         ['innerWidth', window.innerWidth],
