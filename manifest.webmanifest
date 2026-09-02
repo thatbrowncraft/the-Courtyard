@@ -2,20 +2,44 @@
   "name": "Kanha Ji's Courtyard",
   "short_name": "Courtyard",
   "description": "A quiet, offline-first companion for sitting with a verse of the Gita when your heart needs stillness.",
-  "start_url": "./?app=1",
+  "start_url": "./courtyard-app.html",
   "scope": ".",
-  "id": "./courtyard-v2",
+  "id": "./courtyard-app.html",
   "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
   "orientation": "portrait",
   "theme_color": "#241811",
   "background_color": "#160F0A",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["lifestyle", "books"],
+  "categories": [
+    "lifestyle",
+    "books"
+  ],
   "icons": [
-    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

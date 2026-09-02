@@ -1,20 +1,14 @@
 /*
-  Kanha Ji's Courtyard — installed-app mode flag
-  =================================================
-  This file's only job is deciding whether the page was opened as the
-  installed PWA (start_url carries ?app=1) or as the normal website, and
-  adding a stable html.courtyard-app-mode class in the first case.
+  Kanha Ji's Courtyard — installed-app presentation controller
 
-  Deliberately does NOT use navigator.userAgent, pointer/hover media
-  queries, or screen-width guessing — those are exactly what proved
-  unreliable for telling the installed app apart from Chrome's
-  "Desktop site" rendering of the same page. The explicit ?app=1 flag on
-  the installed app's start_url is the only signal used.
+  The normal website is untouched.
+  The installed PWA enters through courtyard-app.html, which sets a
+  session-only app flag before handing the page to index.html.
 
-  When the flag is absent (the normal website), this file does nothing at
-  all — no class, no DOM changes, no side effects — and courtyard-app.css
-  has nothing to match against, so the website is unaffected by any of
-  this. Loaded and runs before app.js; touches nothing app.js owns.
+  This file also bridges Chrome's Desktop-site layout viewport problem:
+  CSS cannot reliably read the physical/visual phone width when Chrome
+  reports a wide layout viewport, so JS exposes visualViewport.width as
+  --courtyard-app-width for the app-only CSS layer.
 */
 (function () {
   'use strict';
@@ -27,29 +21,33 @@
     isAppMode = params.get('app') === '1';
 
     if (isAppMode) {
-      // Persist for this tab/session only, so if the SPA ever reloads or
-      // navigates in a way that drops the query string mid-session, the
-      // installed app doesn't fall back to the website presentation.
-      try { sessionStorage.setItem(APP_MODE_KEY, '1'); } catch (e) { /* ignore */ }
+      try { sessionStorage.setItem(APP_MODE_KEY, '1'); } catch (e) {}
     } else {
-      try { isAppMode = sessionStorage.getItem(APP_MODE_KEY) === '1'; } catch (e) { /* ignore */ }
+      try { isAppMode = sessionStorage.getItem(APP_MODE_KEY) === '1'; } catch (e) {}
     }
-  } catch (e) {
-    isAppMode = false;
+  } catch (e) {}
+
+  if (!isAppMode) return;
+
+  var root = document.documentElement;
+  root.classList.add('courtyard-app-mode');
+
+  function updateViewportBridge() {
+    try {
+      var vv = window.visualViewport;
+      var width = vv && isFinite(vv.width) ? vv.width : 0;
+
+      if (width >= 280 && width <= 700) {
+        root.style.setProperty('--courtyard-app-width', Math.round(width) + 'px');
+      } else {
+        var sw = Math.min(window.screen.width || 0, window.screen.height || 0);
+        if (sw >= 280 && sw <= 700) {
+          root.style.setProperty('--courtyard-app-width', Math.round(sw) + 'px');
+        }
+      }
+    } catch (e) {}
   }
 
-  if (!isAppMode) return; // normal website: safely do nothing
-
-  document.documentElement.classList.add('courtyard-app-mode');
-
-  // Chrome can carry a per-origin "Desktop site" preference into the
-  // installed, standalone-display PWA, which forces a wide layout
-  // viewport regardless of this page's own <meta name="viewport"> tag.
-  // Re-writing that tag's content after the override has already applied
-  // gets Chrome to recompute the layout viewport against the real device
-  // width. This is a no-op with no visible effect whenever Desktop-site
-  // isn't active, and courtyard-app.css's unconditional width guard is
-  // the real guarantee either way.
   try {
     var viewportMeta = document.querySelector('meta[name="viewport"]');
     if (viewportMeta) {
@@ -58,5 +56,13 @@
         'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover'
       );
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) {}
+
+  updateViewportBridge();
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateViewportBridge, { passive: true });
+    window.visualViewport.addEventListener('scroll', updateViewportBridge, { passive: true });
+  }
+  window.addEventListener('resize', updateViewportBridge, { passive: true });
 })();

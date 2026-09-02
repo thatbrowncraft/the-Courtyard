@@ -18,7 +18,7 @@
   would go against "avoid unnecessary downloads." An ambience file is only
   ever re-fetched if its filename changes, or if someone clears site data.
 */
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v9';
 
 const PRECACHE = `courtyard-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `courtyard-data-${CACHE_VERSION}`;
@@ -36,11 +36,10 @@ const CURRENT_CACHES = new Set([PRECACHE, DATA_CACHE, FONT_CACHE, AUDIO_CACHE]);
 //  - assets/images/* — currently unused, cached on demand if that changes
 const PRECACHE_URLS = [
   'index.html',
+  'courtyard-app.html',
   'styles.css',
   'app.js',
   'pwa.js',
-  'courtyard-app.css',
-  'courtyard-app.js',
   'manifest.webmanifest',
   'config.json',
   'data/chapters.json',
