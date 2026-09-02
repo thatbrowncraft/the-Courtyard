@@ -1,21 +1,42 @@
   :root{
-    --ink:#241811;
-    --ink-deep:#160F0A;
-    --midnight:#3B2A1C;
-    --midnight-deep:#2A1D13;
-    --ivory:#F6E9CE;
-    --ivory-dim: rgba(246,233,206,0.82);
-    --ivory-faint: rgba(246,233,206,0.54);
-    --gold:#C08A3E;
-    --gold-bright:#E0AE64;
-    --gold-soft: rgba(192,138,62,0.5);
-    --candle: #FFB463;
-    --line: rgba(241,227,198,0.16);
-    --line-soft: rgba(241,227,198,0.09);
+    /* Default theme is "Warm Putty" (Session 30) — see the theme block
+       below for the other four palette variants (Espresso Clay, Earth
+       Brown, Mushroom Beige, Bone White). Putty was chosen as the
+       default because it's the palette entry that reads as most
+       comfortably readable for long reading sessions while still
+       feeling warm/devotional rather than clinical, per the Session 30
+       brief. All five variants share this exact same set of custom
+       properties — nothing outside this block or the theme block below
+       needs to know which one is active. */
+    --ink:#DED1BA;
+    --ink-deep:#EBE3D6;
+    --ink-deep-rgb: 235,227,214;
+    --midnight:#D2C4AC;
+    --midnight-deep:#F0EAE0;
+    --ivory:#2E261D;
+    --ivory-dim: rgba(46,38,29,0.82);
+    --ivory-faint: rgba(46,38,29,0.56);
+    --gold:#7A4A28;
+    --gold-bright:#8C5A34;
+    --gold-soft: rgba(122,74,40,0.3);
+    --candle: #8A4A22;
+    --line: rgba(46,38,29,0.13);
+    --line-soft: rgba(46,38,29,0.07);
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
     --breeze: 0;
     --jitter: 0;
     --diya-glow: 0.5;
+
+    /* Global text-size scale (Session 30) — one multiplier, applied once
+       to html's own font-size below. Every font-size in this file is
+       already a `rem` value (relative to html, not body), so scaling
+       this one number scales the entire app's typography — navigation,
+       headings, chapter/verse text, buttons, dialogs, settings, journal,
+       meditation, journey, about, PWA banners, empty states — with no
+       further per-component changes needed. html[data-font-size] below
+       overrides this for the small/large picks; the default (no
+       attribute) is normal, --font-scale:1. */
+    --font-scale: 1;
 
     /* Mobile-viewport fix: single source of truth for "the real, currently
        visible viewport height." Defaults to 100vh, so every browser that
@@ -40,32 +61,59 @@
        on browsers that don't support env() at all. */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-
-    /* True-width lock for standalone: set from JS (pwa.js) to
-       window.screen.width — the real physical device width, which stays
-       correct even when Chrome forces a 980px *layout* viewport for
-       "Request desktop site". Defaults to 100vw so nothing changes until
-       html.pwa-standalone actually uses it below. */
-    --true-vw: 100vw;
   }
   @supports (height: 100dvh){
     :root{ --vh-100: 100dvh; }
   }
-  /* ---------- theme variants: same tokens, three different lights ----------
-     "Dusk" is the default palette above (no attribute needed). Night and dawn
-     re-value the same custom properties, so every surface that already reads
-     from var(--ink)/var(--gold)/etc. repaints automatically — no new selectors. */
-  body[data-theme="night"]{
-    --ink:#0E0C12; --ink-deep:#07060A; --midnight:#181330; --midnight-deep:#100C22;
-    --ivory:#E8E4F4; --ivory-dim: rgba(232,228,244,0.82); --ivory-faint: rgba(232,228,244,0.52);
-    --gold:#8D7BC4; --gold-bright:#B2A2EA; --gold-soft: rgba(141,123,196,0.5);
-    --candle:#8B79E0; --line: rgba(232,228,244,0.14); --line-soft: rgba(232,228,244,0.08);
+
+  /* Global text-size scale, continued — html's own font-size is set from
+     `--font-scale`, using `100%` (not a hardcoded 16px) as the base so a
+     visitor's own browser/OS text-size setting is respected and then
+     scaled further by our own multiplier on top of it. Every `rem` value
+     everywhere else in this file is relative to THIS number. */
+  html{ font-size: calc(100% * var(--font-scale)); }
+  html[data-font-size="small"]{ --font-scale: 0.92; }
+  html[data-font-size="large"]{ --font-scale: 1.18; }
+
+  /* ---------- theme variants: same tokens, five different lights ----------
+     (Session 30) "Putty" is the default palette above (no attribute
+     needed — chosen as the most comfortable-to-read, warm option per the
+     Session 30 brief). The other four re-value the same custom
+     properties, so every surface that already reads from var(--ink)/
+     var(--gold)/etc. repaints automatically — no new selectors needed
+     anywhere else. All five are built from the same five-color palette
+     (Espresso Clay → Earth Brown → Mushroom Beige → Warm Putty → Bone
+     White), so they read as one family, light-to-dark, rather than five
+     unrelated designs. Each variant also sets --ink-deep-rgb (the same
+     color as --ink-deep, as a bare "r,g,b" triplet) so header{} below can
+     build a translucent version of it with rgba() — CSS can't derive an
+     alpha-blended color from a var() hex string directly.
+     Replaces the previous three-theme (dusk/night/dawn) system; see
+     applyTheme() in app.js for the one-line migration for anyone who
+     already had one of the old three saved. */
+  body[data-theme="espresso"]{
+    --ink:#5B4C3A; --ink-deep:#3B3126; --ink-deep-rgb:59,49,38; --midnight:#4D4131; --midnight-deep:#403529;
+    --ivory:#FBF8F2; --ivory-dim: rgba(251,248,242,0.82); --ivory-faint: rgba(251,248,242,0.56);
+    --gold:#F0C583; --gold-bright:#F6D9A8; --gold-soft: rgba(240,197,131,0.5);
+    --candle:#FFC98A; --line: rgba(251,248,242,0.16); --line-soft: rgba(251,248,242,0.09);
   }
-  body[data-theme="dawn"]{
-    --ink:#3D2C22; --ink-deep:#2C1F17; --midnight:#5C4630; --midnight-deep:#43321F;
-    --ivory:#FFF4E4; --ivory-dim: rgba(255,244,228,0.86); --ivory-faint: rgba(255,244,228,0.6);
-    --gold:#E28B4E; --gold-bright:#F6B274; --gold-soft: rgba(226,139,78,0.5);
-    --candle:#FFCB8E; --line: rgba(255,244,228,0.18); --line-soft: rgba(255,244,228,0.1);
+  body[data-theme="earth"]{
+    --ink:#6C5A43; --ink-deep:#504332; --ink-deep-rgb:80,67,50; --midnight:#77634B; --midnight-deep:#453A2B;
+    --ivory:#FBF8F2; --ivory-dim: rgba(251,248,242,0.82); --ivory-faint: rgba(251,248,242,0.56);
+    --gold:#F0C583; --gold-bright:#F6D9A8; --gold-soft: rgba(240,197,131,0.45);
+    --candle:#FFC98A; --line: rgba(251,248,242,0.18); --line-soft: rgba(251,248,242,0.1);
+  }
+  body[data-theme="mushroom"]{
+    --ink:#C4B39A; --ink-deep:#D9CEBD; --ink-deep-rgb:217,206,189; --midnight:#D1C2AA; --midnight-deep:#E2D9CC;
+    --ivory:#2E261D; --ivory-dim: rgba(46,38,29,0.82); --ivory-faint: rgba(46,38,29,0.56);
+    --gold:#5F3618; --gold-bright:#7A4A28; --gold-soft: rgba(95,54,24,0.35);
+    --candle:#8A4A22; --line: rgba(46,38,29,0.14); --line-soft: rgba(46,38,29,0.08);
+  }
+  body[data-theme="bone"]{
+    --ink:#F4EFE6; --ink-deep:#FAF8F4; --ink-deep-rgb:250,248,244; --midnight:#E9E0D0; --midnight-deep:#FCFAF8;
+    --ivory:#2E261D; --ivory-dim: rgba(46,38,29,0.82); --ivory-faint: rgba(46,38,29,0.56);
+    --gold:#7A4A28; --gold-bright:#8C5A34; --gold-soft: rgba(122,74,40,0.28);
+    --candle:#8A4A22; --line: rgba(46,38,29,0.12); --line-soft: rgba(46,38,29,0.06);
   }
   *{box-sizing:border-box;}
   html{
@@ -87,7 +135,12 @@
     color:var(--ivory);
     font-family:'EB Garamond', Georgia, serif;
     font-weight:400;
-    font-size:18.5px;
+    /* Was a fixed 18.5px. Expressed as rem now (1.15625rem × the 16px
+       browser default = the exact same 18.5px as before) purely so this
+       one base size participates in the global font-scale system above —
+       html's font-size is the only thing that changes at runtime, and
+       every rem in the file, this one included, rides along with it. */
+    font-size:1.15625rem;
     overflow-x:hidden;
     /* Prevents iOS/Android rubber-band overscroll from momentarily
        revealing the area beyond the document — the other half of the
@@ -506,7 +559,12 @@
     position:sticky; top:0; z-index:30;
     display:flex; align-items:center; justify-content:space-between;
     padding:20px 30px;
-    background:linear-gradient(180deg, rgba(13,14,19,0.94), rgba(13,14,19,0.8));
+    /* Session 30: was a hardcoded near-black rgba, which left nav text
+       unreadable on the new light themes (dark-on-dark). Now built from
+       the active theme's own --ink-deep-rgb, so the header always tracks
+       whichever of the five palettes is active — the glassy blur is the
+       part that mattered, not any one specific color underneath it. */
+    background:linear-gradient(180deg, rgba(var(--ink-deep-rgb),0.94), rgba(var(--ink-deep-rgb),0.8));
     backdrop-filter:blur(6px);
     border-bottom:1px solid var(--line-soft);
   }
@@ -741,9 +799,87 @@
   .switch::after{ content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:0; background:var(--ivory-faint); transition:transform 0.3s var(--ease), background 0.3s var(--ease); }
   .switch.on::after{ transform:translateX(17px); background:var(--gold); }
 
-  .theme-options{ display:flex; gap:12px; }
-  .theme-dot{ width:22px; height:22px; border-radius:50%; cursor:pointer; border:1px solid var(--line); }
-  .theme-dot.active{ border-color:var(--ivory); box-shadow:0 0 0 3px rgba(241,227,198,0.08); }
+  /* ---------- theme swatches (Session 30) ----------
+     Five palette cards, laid out as their own full-width settings block
+     (a .setting-row above holds the label/description; the swatch strip
+     is its own row below so five cards + labels have room on a phone).
+     Selection is shown three ways at once, not by color alone: a gold
+     ring, a raised/scaled state, and a small check badge — the badge is
+     a fixed dark-on-light chip regardless of the swatch's own color, so
+     it stays legible whether the swatch itself is the darkest or
+     lightest of the five. */
+  .theme-swatches{
+    display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;
+    margin-top:16px;
+  }
+  .theme-swatch{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    background:none; border:none; cursor:pointer; padding:4px 2px 2px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .theme-swatch-color{
+    position:relative; display:block; width:100%; aspect-ratio:1;
+    min-height:44px; border-radius:50%;
+    border:1px solid rgba(0,0,0,0.18);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15);
+    transition:transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  }
+  .theme-swatch:hover .theme-swatch-color{ transform:translateY(-2px); }
+  .theme-swatch.active .theme-swatch-color{
+    transform:translateY(-1px);
+    box-shadow:0 0 0 3px var(--ink), 0 0 0 5px var(--gold), inset 0 0 0 1px rgba(255,255,255,0.2);
+  }
+  .theme-swatch-check{
+    position:absolute; top:-4px; right:-4px; width:16px; height:16px;
+    border-radius:50%; background:rgba(20,16,12,0.82); color:#F6E9CE;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.6rem; line-height:1; opacity:0; transform:scale(0.6);
+    transition:opacity 0.2s var(--ease), transform 0.2s var(--ease);
+    border:1px solid rgba(255,255,255,0.4);
+  }
+  .theme-swatch.active .theme-swatch-check{ opacity:1; transform:scale(1); }
+  .theme-swatch-name{
+    font-size:0.66rem; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--ivory-faint); text-align:center; line-height:1.25;
+  }
+  .theme-swatch.active .theme-swatch-name{ color:var(--gold-bright); }
+  .theme-swatch:focus-visible .theme-swatch-color,
+  .font-size-option:focus-visible{
+    outline:2px solid var(--gold-bright); outline-offset:2px;
+  }
+
+  /* ---------- font-size control (Session 30) ----------
+     Three-position pill, inspired by (not copied from) the Samsung
+     Settings "font size" slider referenced in the brief: three sizes of
+     the same "A" glyph, growing left to right, so the choice reads
+     visually before it's even read as text. The active option gets a
+     filled pill + bold weight + a small dot beneath it, so selection is
+     never communicated by color changes alone. */
+  .font-size-control{
+    display:flex; gap:6px; margin-top:16px;
+    border:1px solid var(--line); border-radius:999px; padding:5px;
+    width:fit-content;
+  }
+  .font-size-option{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    min-width:56px; min-height:44px; padding:6px 10px;
+    border-radius:999px; border:none; background:transparent;
+    color:var(--ivory-faint); cursor:pointer; font-family:'EB Garamond', serif;
+    transition:background 0.25s var(--ease), color 0.25s var(--ease);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .font-size-option .fs-glyph{ line-height:1; }
+  .font-size-option[data-size="small"] .fs-glyph{ font-size:0.85rem; }
+  .font-size-option[data-size="normal"] .fs-glyph{ font-size:1.05rem; }
+  .font-size-option[data-size="large"] .fs-glyph{ font-size:1.35rem; }
+  .font-size-option .fs-dot{
+    width:4px; height:4px; border-radius:50%; background:transparent;
+    transition:background 0.25s var(--ease);
+  }
+  .font-size-option.active{
+    background:var(--gold); color:var(--ink-deep); font-weight:600;
+  }
+  .font-size-option.active .fs-dot{ background:var(--ink-deep); }
 
   /* ---------- meditation ---------- */
   .breath-circle{
@@ -822,7 +958,7 @@
     .switch{ width:46px; height:27px; }
     .switch::after{ width:19px; height:19px; }
     .switch.on::after{ transform:translateX(19px); }
-    .theme-dot{ width:28px; height:28px; }
+    .theme-swatches{ gap:8px; }
     .setting-row{ padding:24px 0; gap:14px; }
     .chapter-row{ padding:22px 4px; }
     .back-link{ padding:12px 20px; }
@@ -864,20 +1000,22 @@
      emulation never gain the .pwa-standalone class (only a genuine installed-
      app launch does — see index.html), so their responsive behavior at every
      width is completely unaffected by this block. */
-  /* Width-lock: max-width caps *layout* math (flex-wrap, %-widths — not
-     just visual size, which the zoom fix above already handles) to the
-     real device width, regardless of the 980px layout viewport Chrome
-     hands every selector above. margin auto centers this narrow column
-     inside that wider canvas; html's own background-color (matches
-     body's palette) fills the leftover margin seamlessly either side.
-     transform is a deliberate no-op *visually* — its only job is that any
-     transform on an ancestor makes it the containing block for
-     position:fixed descendants, so #arrival, #krishna-corner, and
-     #soundControl start measuring their top/right/bottom against this
-     correctly-narrow box instead of the wide fake viewport too. On a
-     device with no viewport lie (--true-vw already equals the real
-     width), max-width simply equals body's existing width — a no-op. */
-  html.pwa-standalone body{ max-width:var(--true-vw); margin:0 auto; transform:translateZ(0); }
+  /* Width-lock, rewritten (Session 30): the previous version measured
+     window.visualViewport.scale in JS and applied a counter-`zoom` plus a
+     JS-computed `max-width:Xpx` (--true-vw). On-device testing showed
+     that mechanism was the actual source of the bug it was meant to fix —
+     the debug badge's own numbers (applied zoom 4, innerWidth inflating
+     to ~4x the real 412px screen width, right after that zoom was set)
+     show the zoom correction and the "wide canvas" it was reacting to
+     were the same self-inflicted loop, not two independent problems. So
+     that whole JS-measured/zoom-based approach is removed (see pwa.js) —
+     this is a pure-CSS replacement that never depends on a scale reading:
+     html/body are simply locked to 100% of whatever width the browser
+     ends up using, so there is never leftover canvas to show up as dead
+     space, regardless of what that width actually is. No `zoom` or
+     `transform: scale` involved. */
+  html.pwa-standalone{ width:100%; max-width:100vw; }
+  html.pwa-standalone body{ width:100%; max-width:100%; margin:0; overflow-x:hidden; }
 
   html.pwa-standalone nav{ justify-content:flex-start; overflow-x:auto; gap:16px; }
   html.pwa-standalone nav button{ font-size:0.66rem; padding:10px 4px; }
@@ -892,7 +1030,7 @@
   html.pwa-standalone .switch{ width:46px; height:27px; }
   html.pwa-standalone .switch::after{ width:19px; height:19px; }
   html.pwa-standalone .switch.on::after{ transform:translateX(19px); }
-  html.pwa-standalone .theme-dot{ width:28px; height:28px; }
+  html.pwa-standalone .theme-swatches{ gap:8px; }
   html.pwa-standalone .setting-row{ padding:24px 0; gap:14px; }
   html.pwa-standalone .chapter-row{ padding:22px 4px; }
   html.pwa-standalone .back-link{ padding:12px 20px; }

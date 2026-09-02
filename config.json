@@ -1,7 +1,8 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "appTitle": "Kanha Ji's Courtyard",
-  "defaultTheme": "dusk",
+  "defaultTheme": "putty",
+  "defaultFontSize": "normal",
   "defaultAmbience": null,
   "reducedMotionDefault": false,
   "defaultVolume": 0.45

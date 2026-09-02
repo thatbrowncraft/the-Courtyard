@@ -49,9 +49,10 @@
      touching this file: add data/chapter-NN.json (with its own id/title/
      subtitle/verses) and list its filename in data/chapters.json. */
   let CONFIG = {
-    version: '2.1.0',
+    version: '2.2.0',
     appTitle: "Kanha Ji's Courtyard",
-    defaultTheme: 'dusk',
+    defaultTheme: 'putty',
+    defaultFontSize: 'normal',
     defaultAmbience: null,
     reducedMotionDefault: false,
     defaultVolume: 0.5
@@ -535,13 +536,16 @@
     }, delay);
   }
 
-  /* a single bird, only ever seen if the dawn theme is chosen, and rarely */
+  /* a single bird, only ever seen if the "Bone" theme is chosen, and rarely.
+     (Session 30: this used to check for the retired 'dawn' theme — 'bone'
+     is its closest successor in the new five-theme palette, so the detail
+     isn't silently lost.) */
   function scheduleBird(){
     if(Storage.get('reduceMotion', CONFIG.reducedMotionDefault)) return;
     const delay = 60000 + Math.random()*90000;
     setTimeout(()=>{
       if(Storage.get('reduceMotion', CONFIG.reducedMotionDefault)){ scheduleBird(); return; }
-      if(Storage.get('theme', CONFIG.defaultTheme) === 'dawn' && !document.hidden){
+      if(Storage.get('theme', CONFIG.defaultTheme) === 'bone' && !document.hidden){
         const b = document.createElement('div');
         b.className = 'bird-fly';
         b.innerHTML = '<svg viewBox="0 0 40 14" xmlns="http://www.w3.org/2000/svg"><path d="M2 8 Q10 0 20 7 Q30 0 38 8" fill="none" stroke="rgba(241,227,198,0.5)" stroke-width="1"/></svg>';
@@ -1400,20 +1404,50 @@
     if(reduced){ stopBreeze(); } else { startBreeze(); }
   });
 
+  /* Session 30: five palette themes, replacing the old dusk/night/dawn
+     three. VALID_THEMES gates against anything already saved in
+     localStorage from before this change — an old 'dusk'/'night'/'dawn'
+     value (or anything else unrecognized) quietly falls back to
+     CONFIG.defaultTheme instead of leaving the app in an undefined
+     data-theme state. */
+  const VALID_THEMES = ['espresso', 'earth', 'mushroom', 'putty', 'bone'];
   function applyTheme(theme){
-    if(theme === 'dusk'){ delete document.body.dataset.theme; }
+    if(!VALID_THEMES.includes(theme)) theme = CONFIG.defaultTheme;
+    if(theme === CONFIG.defaultTheme){ delete document.body.dataset.theme; }
     else{ document.body.dataset.theme = theme; }
-    document.querySelectorAll('.theme-dot').forEach(d=>{
+    document.querySelectorAll('.theme-swatch').forEach(d=>{
       const isActive = d.dataset.theme === theme;
       d.classList.toggle('active', isActive);
       d.setAttribute('aria-pressed', String(isActive));
     });
     Storage.set('theme', theme);
   }
-  document.querySelectorAll('.theme-dot').forEach(dot=>{
-    dot.addEventListener('click', ()=> applyTheme(dot.dataset.theme));
+  document.querySelectorAll('.theme-swatch').forEach(swatch=>{
+    swatch.addEventListener('click', ()=> applyTheme(swatch.dataset.theme));
   });
   applyTheme(Storage.get('theme', CONFIG.defaultTheme));
+
+  /* Session 30: global text-size preference — one data attribute on
+     <html>, read by the --font-scale custom property in styles.css.
+     Because every font-size in the stylesheet is already a `rem` value
+     relative to html, this one attribute is the entire mechanism; no
+     other component needs its own font-size logic. */
+  const VALID_FONT_SIZES = ['small', 'normal', 'large'];
+  function applyFontSize(size){
+    if(!VALID_FONT_SIZES.includes(size)) size = CONFIG.defaultFontSize;
+    if(size === 'normal'){ delete document.documentElement.dataset.fontSize; }
+    else{ document.documentElement.dataset.fontSize = size; }
+    document.querySelectorAll('.font-size-option').forEach(btn=>{
+      const isActive = btn.dataset.size === size;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+    Storage.set('fontSize', size);
+  }
+  document.querySelectorAll('.font-size-option').forEach(btn=>{
+    btn.addEventListener('click', ()=> applyFontSize(btn.dataset.size));
+  });
+  applyFontSize(Storage.get('fontSize', CONFIG.defaultFontSize));
 
   document.getElementById('replayWelcomeBtn').addEventListener('click', ()=>{
     Storage.set('lastArrivalShown', null);

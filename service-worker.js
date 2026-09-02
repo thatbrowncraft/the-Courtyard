@@ -18,7 +18,7 @@
   would go against "avoid unnecessary downloads." An ambience file is only
   ever re-fetched if its filename changes, or if someone clears site data.
 */
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 
 const PRECACHE = `courtyard-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `courtyard-data-${CACHE_VERSION}`;
@@ -246,7 +246,6 @@ self.addEventListener('fetch', (event) => {
     }
 
     return response;
-        }
         } catch (e) {
           const cache = await caches.open(PRECACHE);
           const cached = await cache.match(resolveScoped('index.html'));

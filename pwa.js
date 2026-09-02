@@ -10,67 +10,30 @@
 (function () {
   'use strict';
 
-  /* ---------------- standalone-PWA viewport correction ----------------
-     Confirmed necessary (not speculative anymore — see the on-device debug
-     badge readings): with Chrome's per-origin "Request desktop site" on,
-     the installed app measured innerWidth 980 and visualViewport.scale
-     ~0.42; with it off, innerWidth 411 and scale 1, and the app rendered
-     perfectly. So the 980px forced-desktop-viewport bug is real on this
-     device, and this is what corrects it back to true size, independent
-     of that per-origin browser setting.
+  /* ---------------- standalone-PWA width correction: REMOVED (Session 30) ----------------
+     A previous session added a JS fix here that read
+     window.visualViewport.scale and, when it deviated from 1, applied a
+     counter-`zoom` on <html> plus a JS-measured `--true-vw` custom
+     property for styles.css to lock body's width to.
 
-     window.visualViewport.scale is Chrome's own report of how much it
-     auto-shrank the forced-980px layout to fit the real screen, so the
-     fix is a counter-zoom of 1 / scale on the document root: the two
-     multiply out to ~1, i.e. true physical size. `zoom` (not
-     `transform: scale()`) is used deliberately here — a transform on
-     <html> itself would create a new containing block for every
-     position:fixed element in the app, independent of whether that's
-     wanted; `zoom` has no such side effect. (styles.css does deliberately
-     add a transform to <body> for html.pwa-standalone specifically so
-     fixed elements measure against the width-locked box set up below,
-     instead of the wide fake viewport — that's a separate, intentional
-     use of the same technique, one level down.)
+     On-device testing (this session) showed that mechanism was the
+     actual cause of the "content squeezed to the left, dead space on the
+     right" bug, not a fix for it: the debug badge captured
+     visualViewport.scale: 0.25, applied zoom (fix): 4, and
+     innerWidth: 1646 — 1646 is ~4x the device's real 412px width, i.e.
+     exactly the zoom factor the fix had just applied. Setting
+     `document.documentElement.style.zoom` fed back into the very
+     visualViewport reading the code used to decide how much zoom to
+     apply, so it never actually converged on 1 — it just kept
+     re-asserting a 4x correction against a problem it was itself
+     causing.
 
-     Alongside the zoom correction, this also sets --true-vw from
-     window.screen.width — the actual physical device width, which stays
-     correct no matter what Chrome's *layout* viewport claims — so
-     styles.css can lock html.pwa-standalone body's width to it. zoom
-     alone only fixes *visual size* (text isn't shrunk to a point); without
-     this, *layout math* — nav's flex-wrap decision, spacing, anything
-     width-dependent — still resolves against the fake 980px canvas, which
-     is spacious enough to look "desktop" even once everything is the
-     right physical size.
-
-     Gated entirely on html.pwa-standalone (set synchronously in
-     index.html's inline bootstrap script), so this is a complete no-op in
-     every normal browser tab and in DevTools device emulation — neither
-     ever carries that class — regardless of "Request desktop site" or any
-     other Chrome setting on this device. */
-  window.__COURTYARD_APPLIED_ZOOM__ = '(not evaluated)';
-  window.__COURTYARD_TRUE_VW__ = '(not evaluated)';
-  function trueDeviceWidth() {
-    if (window.screen && window.screen.width) return window.screen.width;
-    if (window.visualViewport) return window.visualViewport.width * (window.visualViewport.scale || 1);
-    return window.innerWidth;
-  }
-  function correctStandaloneViewportZoom() {
-    if (!document.documentElement.classList.contains('pwa-standalone')) return;
-    if (!window.visualViewport) return;
-    function apply() {
-      var scale = window.visualViewport.scale || 1;
-      var target = (scale && Math.abs(scale - 1) > 0.02) ? String(1 / scale) : '';
-      document.documentElement.style.zoom = target;
-      window.__COURTYARD_APPLIED_ZOOM__ = target || '1 (no correction needed)';
-      var trueW = trueDeviceWidth();
-      document.documentElement.style.setProperty('--true-vw', trueW + 'px');
-      window.__COURTYARD_TRUE_VW__ = trueW;
-    }
-    apply();
-    window.visualViewport.addEventListener('resize', apply);
-    window.addEventListener('orientationchange', apply);
-  }
-  correctStandaloneViewportZoom();
+     Rather than patch that loop with another zoom/scale value (which
+     would just be a different guess at the same fragile mechanism), the
+     fix is now pure CSS and never depends on measuring scale at all —
+     see the html.pwa-standalone rules in styles.css. That approach can't
+     self-reinforce the way a JS-measured zoom loop can, because it never
+     reads back a value it just wrote. */
 
   /* ---------------- offline banner ----------------
      A calm, ambient note — never a browser error, never demanding action. */
@@ -251,9 +214,8 @@
         ['innerWidth', window.innerWidth],
         ['visualViewport.width', window.visualViewport ? window.visualViewport.width : 'n/a'],
         ['visualViewport.scale', window.visualViewport ? window.visualViewport.scale : 'n/a'],
-        ['applied zoom (fix)', window.__COURTYARD_APPLIED_ZOOM__],
-        ['--true-vw (fix)', window.__COURTYARD_TRUE_VW__],
         ['screen.width', window.screen ? window.screen.width : 'n/a'],
+        ['html computed width', document.documentElement.getBoundingClientRect().width],
         ['body computed width', document.body.getBoundingClientRect().width]
       ];
       var lines = open

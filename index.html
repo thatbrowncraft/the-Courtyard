@@ -68,7 +68,7 @@
 <!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
      service-worker.js — neither touches routing, layout, or app.js. -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#241811">
+<meta name="theme-color" content="#EBE3D6">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/icons/favicon-16.png" sizes="16x16" type="image/png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -337,17 +337,6 @@
         </div>
         <div class="setting-row">
           <div>
-            <div class="setting-label">Time of day theme</div>
-            <div class="setting-desc">Choose the light your courtyard sits in</div>
-          </div>
-          <div class="theme-options">
-            <button class="theme-dot active" style="background:#3B2A1C" data-theme="dusk" aria-label="Dusk" aria-pressed="true"></button>
-            <button class="theme-dot" style="background:#160F0A" data-theme="night" aria-label="Night" aria-pressed="false"></button>
-            <button class="theme-dot" style="background:#4A3520" data-theme="dawn" aria-label="Dawn" aria-pressed="false"></button>
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
             <div class="setting-label">Replay the welcome</div>
             <div class="setting-desc">See the arrival sequence again, right now</div>
           </div>
@@ -359,6 +348,64 @@
             <div class="setting-desc">This cannot be undone</div>
           </div>
           <button id="clearDataBtn" style="border-radius:0; padding:9px 18px; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ivory-dim); background:transparent; border:1px solid var(--line); cursor:pointer;">Clear</button>
+        </div>
+      </div>
+
+      <!-- Appearance / Theme (Session 30) — five palette swatches, replacing
+           the old three-dot dusk/night/dawn picker. A separate card from the
+           toggle/button row above so it has room to breathe on a phone. -->
+      <div class="card">
+        <div class="setting-row" style="border-bottom:none; padding-bottom:6px;">
+          <div>
+            <div class="setting-label">Appearance</div>
+            <div class="setting-desc">Choose the light your courtyard sits in</div>
+          </div>
+        </div>
+        <div class="theme-swatches" role="group" aria-label="Theme">
+          <button class="theme-swatch" data-theme="espresso" aria-label="Espresso Clay" aria-pressed="false">
+            <span class="theme-swatch-color" style="background:#5B4C3A"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
+            <span class="theme-swatch-name">Espresso</span>
+          </button>
+          <button class="theme-swatch" data-theme="earth" aria-label="Rich Earth Brown" aria-pressed="false">
+            <span class="theme-swatch-color" style="background:#8A7356"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
+            <span class="theme-swatch-name">Earth</span>
+          </button>
+          <button class="theme-swatch" data-theme="mushroom" aria-label="Soft Mushroom Beige" aria-pressed="false">
+            <span class="theme-swatch-color" style="background:#C4B39A"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
+            <span class="theme-swatch-name">Mushroom</span>
+          </button>
+          <button class="theme-swatch active" data-theme="putty" aria-label="Warm Putty" aria-pressed="true">
+            <span class="theme-swatch-color" style="background:#DED1BA"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
+            <span class="theme-swatch-name">Putty</span>
+          </button>
+          <button class="theme-swatch" data-theme="bone" aria-label="Gentle Bone White" aria-pressed="false">
+            <span class="theme-swatch-color" style="background:#F4EFE6"><span class="theme-swatch-check" aria-hidden="true">&#10003;</span></span>
+            <span class="theme-swatch-name">Bone</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Reading / Text Size (Session 30) — global font-scale, three steps. -->
+      <div class="card">
+        <div class="setting-row" style="border-bottom:none; padding-bottom:6px;">
+          <div>
+            <div class="setting-label">Reading / Text Size</div>
+            <div class="setting-desc">Adjust text size throughout the Courtyard</div>
+          </div>
+        </div>
+        <div class="font-size-control" role="group" aria-label="Text size">
+          <button class="font-size-option" data-size="small" aria-label="Small text" aria-pressed="false">
+            <span class="fs-glyph" aria-hidden="true">A</span>
+            <span class="fs-dot" aria-hidden="true"></span>
+          </button>
+          <button class="font-size-option active" data-size="normal" aria-label="Normal text" aria-pressed="true">
+            <span class="fs-glyph" aria-hidden="true">A</span>
+            <span class="fs-dot" aria-hidden="true"></span>
+          </button>
+          <button class="font-size-option" data-size="large" aria-label="Large text" aria-pressed="false">
+            <span class="fs-glyph" aria-hidden="true">A</span>
+            <span class="fs-dot" aria-hidden="true"></span>
+          </button>
         </div>
       </div>
 
