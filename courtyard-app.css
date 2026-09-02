@@ -1,0 +1,135 @@
+/*
+  Kanha Ji's Courtyard — installed-app presentation layer
+  =========================================================
+  Everything in this file is scoped under html.courtyard-app-mode, a class
+  that courtyard-app.js only ever adds when the page was launched with the
+  explicit ?app=1 flag (the installed PWA's start_url). The normal website,
+  opened at the plain URL, never gets this class and is completely
+  untouched by anything below.
+
+  WHY THIS FILE EXISTS: Chrome can carry a per-origin "Desktop site"
+  preference into the installed, standalone-display PWA. When that happens,
+  Chrome uses a wide (~980px) layout viewport instead of the real device
+  width, so styles.css's own max-width:720px / max-width:360px media
+  queries silently stop matching and the app renders a squeezed desktop
+  layout inside a phone window. courtyard-app.js re-asserts the viewport
+  meta tag at runtime to fix the layout viewport itself where it can — but
+  this file exists as the actual guarantee: every rule needed for a stable
+  phone layout is applied unconditionally here (not gated behind a
+  max-width query), so the installed app looks and behaves the same
+  regardless of what width Chrome happens to be reporting.
+
+  This is a presentation layer only. No colors, typography, content,
+  decorative elements, or navigation structure are changed — only the
+  layout rules already proven out by styles.css's own mobile media
+  queries, now applied unconditionally for app mode, plus width/overflow
+  guards and safe-area padding for the notch/gesture-bar case.
+*/
+
+/* ---------- hard width guard ----------
+   Whatever layout-viewport width Chrome is reporting, never let the
+   installed app's content exceed the real device width or scroll
+   sideways. */
+html.courtyard-app-mode{
+  max-width:100vw;
+  overflow-x:hidden;
+}
+html.courtyard-app-mode body{
+  max-width:100vw;
+  width:100%;
+  overflow-x:hidden;
+}
+
+/* ---------- phone-first layout rules ----------
+   Same declarations as styles.css's @media (max-width:720px) block,
+   applied unconditionally in app mode instead of behind a width check
+   that a desktop-site viewport can defeat. */
+html.courtyard-app-mode nav{
+  justify-content:flex-start;
+  overflow-x:auto;
+  gap:16px;
+  -webkit-overflow-scrolling:touch;
+}
+html.courtyard-app-mode nav button{
+  font-size:0.66rem;
+  padding:10px 4px;
+}
+html.courtyard-app-mode .brand span.brand-text{ display:none; }
+html.courtyard-app-mode .section-shell{ padding:44px 20px 70px; }
+html.courtyard-app-mode #banyan{ opacity:0.15; width:150px; }
+html.courtyard-app-mode .emotion-item{ padding:20px 6px; font-size:1.22rem; }
+html.courtyard-app-mode .quick-links{ gap:20px; }
+html.courtyard-app-mode .quick-links button{ padding:8px 2px; }
+html.courtyard-app-mode #soundToggle{ width:38px; height:38px; }
+html.courtyard-app-mode #soundPanel button{ padding:14px 18px; font-size:0.95rem; }
+html.courtyard-app-mode .switch{ width:46px; height:27px; }
+html.courtyard-app-mode .switch::after{ width:19px; height:19px; }
+html.courtyard-app-mode .switch.on::after{ transform:translateX(19px); }
+html.courtyard-app-mode .theme-dot{ width:28px; height:28px; }
+html.courtyard-app-mode .setting-row{ padding:24px 0; gap:14px; }
+html.courtyard-app-mode .chapter-row{ padding:22px 4px; }
+html.courtyard-app-mode .back-link{ padding:12px 20px; }
+html.courtyard-app-mode #krishna-corner{
+  transform:scale(0.82);
+  transform-origin:bottom right;
+  bottom:14px;
+  right:14px;
+}
+
+/* Same intent as styles.css's own hero/header padding, just re-asserted
+   so it can't be overridden by a wide reported viewport shrinking the
+   effective touch/reading area proportionally instead of absolutely. */
+html.courtyard-app-mode header{
+  padding-left:20px;
+  padding-right:20px;
+  flex-wrap:wrap;
+  row-gap:10px;
+}
+
+/* ---------- extra-narrow phones ----------
+   Same as styles.css's @media (max-width:360px) block. Kept as an actual
+   media query (rather than unconditional) because this one is genuinely
+   about real device width, not about the desktop-site viewport bug — once
+   the width guard above is in effect, a narrow phone reports its real
+   width and this can safely layer on top. */
+@media (max-width: 360px){
+  html.courtyard-app-mode .section-shell{ padding:36px 16px 64px; }
+  html.courtyard-app-mode .hero{ padding:96px 16px 16px; }
+  html.courtyard-app-mode .emotion-list{ padding:0 16px; }
+  html.courtyard-app-mode #soundPanel{ min-width:168px; }
+  html.courtyard-app-mode nav{ gap:12px; }
+}
+
+/* ---------- safe-area support ----------
+   The manifest/meta already declare viewport-fit=cover; in standalone
+   display (no browser chrome) that means fixed/sticky edge elements can
+   sit under a status bar or gesture bar unless they claim the inset
+   themselves. The normal website, running inside browser chrome, never
+   needs this, so it's kept inside app mode only. */
+html.courtyard-app-mode header{
+  padding-top:calc(20px + env(safe-area-inset-top, 0px));
+}
+html.courtyard-app-mode footer{
+  padding-bottom:calc(32px + env(safe-area-inset-bottom, 0px));
+}
+html.courtyard-app-mode #soundControl{
+  left:calc(24px + env(safe-area-inset-left, 0px));
+  bottom:calc(26px + env(safe-area-inset-bottom, 0px));
+}
+html.courtyard-app-mode .pwa-banner{
+  bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---------- portrait-first ----------
+   The manifest already locks orientation:portrait for the installed app;
+   this is just a belt-and-suspenders layout guard in case a device ever
+   presents a landscape viewport anyway (e.g. a foldable), so the app
+   never stretches into a desktop-feeling wide layout. */
+@media (orientation: landscape){
+  html.courtyard-app-mode .hero,
+  html.courtyard-app-mode .section-shell{
+    max-width:520px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}

@@ -3,40 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<script>
-/* Courtyard PWA mobile lock.
-   The installed app is intentionally a phone-first experience. Chrome
-   Android can force a desktop User-Agent and a ~980px layout viewport when
-   Desktop site is enabled. In standalone mode we therefore opt into the
-   Courtyard mobile layout unconditionally and, when possible, size the
-   viewport from the visual viewport rather than Chrome's forced layout width. */
-(function(){
-  try {
-    var standalone = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-    standalone = standalone || !!navigator.standalone;
-
-    if (standalone) {
-      document.documentElement.classList.add('courtyard-mobile-device');
-
-      var vp = document.querySelector('meta[name="viewport"]');
-      if (vp) {
-        var visualWidth = window.visualViewport && window.visualViewport.width;
-        var screenWidth = Math.min(screen.width || 0, screen.height || 0);
-        var candidate = (visualWidth && isFinite(visualWidth) && visualWidth >= 280 && visualWidth <= 700) ? visualWidth : screenWidth;
-        if (candidate && candidate >= 280 && candidate <= 700) {
-          vp.setAttribute('content', 'width=' + Math.round(candidate) + ', initial-scale=1, maximum-scale=1, viewport-fit=cover');
-        } else {
-          vp.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
-        }
-      }
-    }
-  } catch(e) {}
-})();
-</script>
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+
+<!-- Installed-app presentation layer: only ever applies when launched via
+     the installed PWA's ?app=1 start_url (see courtyard-app.js). The
+     normal website loads these same two files but they do nothing unless
+     that flag is present. Shared styles.css/app.js above are untouched. -->
+<link rel="stylesheet" href="courtyard-app.css">
+<script src="courtyard-app.js"></script>
 
 <!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
      service-worker.js — neither touches routing, layout, or app.js. -->
