@@ -899,3 +899,11 @@
   color:var(--ivory-faint); font-size:0.72rem; font-style:italic;
   opacity:0.75; margin-top:10px;
 }
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  body {
+    max-width: 480px !important;
+    margin: 0 auto !important;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
