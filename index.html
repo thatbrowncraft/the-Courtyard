@@ -3,13 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+/* PWA-only viewport correction — installed standalone app only.
+   Some Android home-screen (WebAPK/TWA) shells miscompute
+   "width=device-width" once launched standalone, handing the page a
+   layout viewport wider than the phone's real CSS width (the layout
+   then renders as if on a bigger screen). This block only ever runs
+   when the app is actually running standalone/home-screen; a normal
+   Chrome tab or any desktop browser hits the early return on the first
+   line and is left completely untouched. It must run synchronously
+   here, before styles.css and app.js do any layout work, so there's no
+   flash of the wrong width. See pwa.js for the rest of the PWA glue. */
+(function () {
+  var isStandalone =
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true; // iOS home-screen
+  if (!isStandalone) return;
+
+  var meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) return;
+
+  function applyCorrectWidth() {
+    var cssWidth = window.screen && window.screen.width;
+    if (!cssWidth || cssWidth < 200 || cssWidth > 900) return; // sanity guard
+    meta.setAttribute('content', 'width=' + cssWidth + ', initial-scale=1.0, viewport-fit=cover');
+  }
+
+  applyCorrectWidth();
+  // Manifest locks orientation to portrait, but some devices still fire
+  // this once on launch before settling — cheap to handle, never fires
+  // outside standalone mode.
+  window.addEventListener('orientationchange', applyCorrectWidth);
+})();
+</script>
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 
 <!-- PWA: manifest, icons, and install/theming metadata. See pwa.js and
-     service-worker.js — neither touches routing, layout, or app.js. -->
+     service-worker.js — neither touches routing, layout, or app.js.
+     The one exception is the small inline script right after the
+     viewport meta tag above: it only activates in standalone
+     (installed) mode to correct the layout viewport width, and is a
+     no-op in a normal browser tab or on desktop. -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#241811">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
