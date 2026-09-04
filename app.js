@@ -1415,6 +1415,59 @@
   });
   applyTheme(Storage.get('theme', CONFIG.defaultTheme));
 
+  /* ---------------- font size (accessibility) ----------------
+     A single --font-scale custom property, set on the root element, is
+     read by every rem-based font-size in styles.css — so one number here
+     resizes headings, paragraphs, nav, buttons, cards, and verse text
+     together, in proportion, across the whole app. Levels beyond "Very
+     Large" exist specifically for anyone who needs substantially larger
+     text; at "Maximum", wrapping and taller cards/buttons are expected
+     and preferred over shrinking anything to compensate. */
+  const FONT_SCALES = {
+    'very-small': 0.85,
+    'small': 0.92,
+    'medium': 1.00,
+    'large': 1.10,
+    'very-large': 1.20,
+    'extra-large': 1.32,
+    'huge': 1.45,
+    'very-huge': 1.60,
+    'maximum': 1.80
+  };
+  const FONT_SIZE_LABELS = {
+    'very-small': 'Very Small',
+    'small': 'Small',
+    'medium': 'Medium',
+    'large': 'Large',
+    'very-large': 'Very Large',
+    'extra-large': 'Extra Large',
+    'huge': 'Huge',
+    'very-huge': 'Very Huge',
+    'maximum': 'Maximum'
+  };
+  // Levels at which readability should take priority over compactness
+  // (rows may wrap onto more lines rather than clip or overflow).
+  const FONT_SCALE_EXPANDED = ['extra-large', 'huge', 'very-huge', 'maximum'];
+  const DEFAULT_FONT_SIZE = 'medium';
+
+  function applyFontSize(key){
+    if(!FONT_SCALES.hasOwnProperty(key)) key = DEFAULT_FONT_SIZE;
+    document.documentElement.style.setProperty('--font-scale', FONT_SCALES[key]);
+    document.documentElement.classList.toggle('font-scale-expanded', FONT_SCALE_EXPANDED.includes(key));
+    document.querySelectorAll('.font-size-dot').forEach(d=>{
+      const isActive = d.dataset.fontSize === key;
+      d.classList.toggle('active', isActive);
+      d.setAttribute('aria-pressed', String(isActive));
+    });
+    const desc = document.getElementById('fontSizeDesc');
+    if(desc) desc.textContent = `Adjust text size across the whole Courtyard. Currently: ${FONT_SIZE_LABELS[key]}`;
+    Storage.set('fontSize', key);
+  }
+  document.querySelectorAll('.font-size-dot').forEach(dot=>{
+    dot.addEventListener('click', ()=> applyFontSize(dot.dataset.fontSize));
+  });
+  applyFontSize(Storage.get('fontSize', DEFAULT_FONT_SIZE));
+
   document.getElementById('replayWelcomeBtn').addEventListener('click', ()=>{
     Storage.set('lastArrivalShown', null);
     runArrival(true);

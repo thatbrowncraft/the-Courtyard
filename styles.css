@@ -16,6 +16,20 @@
     --breeze: 0;
     --jitter: 0;
     --diya-glow: 0.5;
+
+    /* ---------- accessibility: whole-app font scale ----------
+       A single multiplier applied to the root font-size (see the `html`
+       rule below). Everything sized in rem anywhere in this stylesheet
+       scales from this one number — set only via JS (applyFontSize in
+       app.js), never hand-edited per element. 1 = Medium/default. */
+    --font-scale: 1;
+
+    /* ---------- functional navigation/action typeface ----------
+       Used only for interactive wayfinding controls (top nav, quick
+       links, back links, continue/next/prev actions, small settings
+       utility buttons) — never for literary/poetic content, which keeps
+       its existing Cormorant Garamond character untouched. */
+    --font-ui-action: 'Fraunces', 'EB Garamond', Georgia, serif;
   }
   /* ---------- theme variants: same tokens, three different lights ----------
      "Dusk" is the default palette above (no attribute needed). Night and dawn
@@ -33,6 +47,51 @@
     --gold:#E28B4E; --gold-bright:#F6B274; --gold-soft: rgba(226,139,78,0.5);
     --candle:#FFCB8E; --line: rgba(255,244,228,0.18); --line-soft: rgba(255,244,228,0.1);
   }
+
+  /* ---------- earthy solid-color themes ----------
+     Same token set as dusk/night/dawn above — only the values change, so
+     every surface already reading var(--ink)/var(--gold)/etc. repaints
+     automatically. Deliberately flat: each theme also overrides `background`
+     on body directly to a single solid color, replacing the default
+     multi-layer gradient background (see the plain `body{ background:... }`
+     rule) so these five palettes read as pigment/paper/wood, never as a
+     lighting or glow effect. No gradients, blur, glow, or texture anywhere
+     in this block. */
+  body[data-theme="dried-leaves"]{
+    --ink:#2B2013; --ink-deep:#1C1509; --midnight:#4A3B22; --midnight-deep:#332913;
+    --ivory:#EDE2C8; --ivory-dim: rgba(237,226,200,0.82); --ivory-faint: rgba(237,226,200,0.54);
+    --gold:#A9863E; --gold-bright:#D8AE64; --gold-soft: rgba(169,134,62,0.5);
+    --candle:#E0B36B; --line: rgba(237,226,200,0.16); --line-soft: rgba(237,226,200,0.09);
+    background:var(--ink-deep);
+  }
+  body[data-theme="sandalwood"]{
+    --ink:#3A2A1C; --ink-deep:#241708; --midnight:#5C4326; --midnight-deep:#40301C;
+    --ivory:#F5E6C8; --ivory-dim: rgba(245,230,200,0.82); --ivory-faint: rgba(245,230,200,0.54);
+    --gold:#B8875A; --gold-bright:#DDAE78; --gold-soft: rgba(184,135,90,0.5);
+    --candle:#F0BE86; --line: rgba(245,230,200,0.16); --line-soft: rgba(245,230,200,0.09);
+    background:var(--ink-deep);
+  }
+  body[data-theme="forest-earth"]{
+    --ink:#22261C; --ink-deep:#141710; --midnight:#3A4030; --midnight-deep:#282D1F;
+    --ivory:#E6E8D2; --ivory-dim: rgba(230,232,210,0.82); --ivory-faint: rgba(230,232,210,0.54);
+    --gold:#7C8A4E; --gold-bright:#A3B36C; --gold-soft: rgba(124,138,78,0.5);
+    --candle:#B7C47E; --line: rgba(230,232,210,0.16); --line-soft: rgba(230,232,210,0.09);
+    background:var(--ink-deep);
+  }
+  body[data-theme="terracotta"]{
+    --ink:#3D2317; --ink-deep:#251105; --midnight:#5E3524; --midnight-deep:#432619;
+    --ivory:#F7E4D2; --ivory-dim: rgba(247,228,210,0.82); --ivory-faint: rgba(247,228,210,0.54);
+    --gold:#C1613A; --gold-bright:#E08654; --gold-soft: rgba(193,97,58,0.5);
+    --candle:#EC9A66; --line: rgba(247,228,210,0.16); --line-soft: rgba(247,228,210,0.09);
+    background:var(--ink-deep);
+  }
+  body[data-theme="monsoon-soil"]{
+    --ink:#241C16; --ink-deep:#140F0A; --midnight:#3B2E22; --midnight-deep:#2A2018;
+    --ivory:#E6DECF; --ivory-dim: rgba(230,222,207,0.82); --ivory-faint: rgba(230,222,207,0.54);
+    --gold:#8B7355; --gold-bright:#AE9673; --gold-soft: rgba(139,115,85,0.5);
+    --candle:#C2A97F; --line: rgba(230,222,207,0.16); --line-soft: rgba(230,222,207,0.09);
+    background:var(--ink-deep);
+  }
   *{box-sizing:border-box;}
   html{
     scroll-behavior:smooth;
@@ -42,6 +101,14 @@
        fixed decorative layers below can outrun for a frame. Setting this
        explicitly removes any dependency on propagation timing. */
     background-color:var(--ink-deep);
+    /* ---------- accessibility: whole-app font scale ----------
+       Every font-size elsewhere in this file is in rem (or clamp()/calc()
+       built from rem), so multiplying the root's own font-size is the one
+       change that resizes headings, paragraphs, nav, buttons, cards, and
+       verse text together, in proportion, everywhere at once. 100% keeps
+       browser/OS zoom and accessibility settings working exactly as before
+       when --font-scale is 1 (Medium, the default). */
+    font-size:calc(100% * var(--font-scale, 1));
   }
   body{
     margin:0;
@@ -53,7 +120,7 @@
     color:var(--ivory);
     font-family:'EB Garamond', Georgia, serif;
     font-weight:400;
-    font-size:18.5px;
+    font-size:1.15625rem; /* 18.5px at the default 16px root — now scales with --font-scale */
     overflow-x:hidden;
     /* Prevents iOS/Android rubber-band overscroll from momentarily
        revealing the area beyond the document — the other half of the
@@ -465,7 +532,7 @@
   nav{ display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:22px; }
   nav button{
     background:none; border:none; color:var(--ivory-dim);
-    font-family:'EB Garamond', serif; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+    font-family:var(--font-ui-action); font-weight:600; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
     padding:6px 2px; cursor:pointer; position:relative; transition:color 0.35s var(--ease);
   }
   nav button:hover{ color:var(--ivory); }
@@ -511,7 +578,8 @@
   .quick-links{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:16px; max-width:760px; margin:70px auto 0; padding:0 24px 110px; }
   .quick-links button{
     background:none; border:none; color:var(--ivory-faint);
-    font-size:0.76rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;
+    font-family:var(--font-ui-action); font-weight:600;
+    font-size:0.76rem; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer;
     padding:2px 0; border-bottom:1px solid transparent; transition:all 0.3s var(--ease);
   }
   .quick-links button:hover{ color:var(--gold-bright); border-color:var(--gold-soft); }
@@ -537,7 +605,8 @@
   .continue-btn{
     background:transparent; color:var(--ivory-dim); border:1px solid var(--line);
     padding:9px 18px; border-radius:0; cursor:pointer;
-    font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase;
+    font-family:var(--font-ui-action); font-weight:600;
+    font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase;
     transition:all 0.3s var(--ease);
   }
   .continue-btn:hover, .continue-btn:focus-visible{ border-color:var(--gold-soft); color:var(--gold-bright); }
@@ -629,7 +698,8 @@
   .back-link{
     border:1px solid var(--line); background:transparent; color:var(--ivory-dim);
     padding:9px 18px; border-radius:0; cursor:pointer; margin-bottom:32px;
-    font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; transition:all 0.3s var(--ease);
+    font-family:var(--font-ui-action); font-weight:600;
+    font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; transition:all 0.3s var(--ease);
   }
   .back-link:hover{ border-color:var(--gold-soft); color:var(--gold-bright); }
 
@@ -644,6 +714,10 @@
   .chapter-title{ display:block; font-family:'Cormorant Garamond', serif; font-size:1.12rem; font-style:italic; color:var(--ivory); }
   .chapter-sub{ display:block; font-size:0.82rem; color:var(--ivory-faint); margin-top:3px; }
   .chapter-count{ font-size:0.76rem; color:var(--ivory-faint); letter-spacing:0.04em; white-space:nowrap; }
+  /* At the larger accessibility font-size levels, readability wins over
+     keeping this row on one line — let it wrap instead of overflowing. */
+  html.font-scale-expanded .chapter-row{ flex-wrap:wrap; row-gap:6px; }
+  html.font-scale-expanded .chapter-count{ white-space:normal; margin-left:0; }
 
   /* ---------- search ---------- */
   .search-bar{ margin-bottom:36px; }
@@ -691,9 +765,32 @@
   .switch::after{ content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:0; background:var(--ivory-faint); transition:transform 0.3s var(--ease), background 0.3s var(--ease); }
   .switch.on::after{ transform:translateX(17px); background:var(--gold); }
 
-  .theme-options{ display:flex; gap:12px; }
-  .theme-dot{ width:22px; height:22px; border-radius:50%; cursor:pointer; border:1px solid var(--line); }
+  /* These four share the same small uppercase "action" language as nav/
+     quick-links/continue-btn above (they set their own size/spacing/border
+     inline in index.html) — only the typeface needs to change here. */
+  #replayWelcomeBtn, #clearDataBtn, #exportJournalBtn, #importJournalBtn{
+    font-family:var(--font-ui-action); font-weight:600; letter-spacing:0.06em;
+  }
+
+  .theme-options{ display:flex; flex-wrap:wrap; gap:12px; justify-content:flex-end; max-width:260px; }
+  .theme-dot{ width:22px; height:22px; border-radius:50%; cursor:pointer; border:1px solid var(--line); flex:0 0 auto; }
   .theme-dot.active{ border-color:var(--ivory); box-shadow:0 0 0 3px rgba(241,227,198,0.08); }
+
+  /* ---------- font size (accessibility) ---------- */
+  .font-size-options{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; max-width:230px; }
+  .font-size-dot{
+    flex:0 0 auto; min-width:34px; height:30px; padding:0 8px;
+    background:transparent; color:var(--ivory-dim); border:1px solid var(--line); border-radius:0;
+    font-family:var(--font-ui-action); font-weight:600; font-size:0.68rem; letter-spacing:0.02em;
+    cursor:pointer; transition:all 0.3s var(--ease);
+  }
+  .font-size-dot:hover, .font-size-dot:focus-visible{ border-color:var(--gold-soft); color:var(--gold-bright); }
+  .font-size-dot.active{ border-color:var(--gold); color:var(--gold-bright); background:rgba(192,138,62,0.09); }
+  /* Give the row room to stack (label above, 9 buttons below) instead of
+     squeezing on narrow screens — the label/description keep their normal
+     width, only this particular control wraps onto its own line. */
+  .setting-row:has(.font-size-options){ flex-wrap:wrap; row-gap:14px; }
+  .setting-row:has(.font-size-options) .font-size-options{ width:100%; max-width:100%; justify-content:flex-start; }
 
   /* ---------- meditation ---------- */
   .breath-circle{
@@ -930,7 +1027,7 @@
     min-width:0;
     min-height:100dvh;
     height:auto;
-    font-size:17px;
+    font-size:1.0625rem; /* 17px at the default 16px root — now scales with --font-scale */
     overflow-x:hidden;
     overflow-y:visible;
     -webkit-text-size-adjust:100%;
@@ -986,7 +1083,7 @@
     min-height:38px;
     padding:9px 2px 8px;
     font-size:0.68rem;
-    letter-spacing:0.11em;
+    letter-spacing:0.05em;
     white-space:nowrap;
   }
 
@@ -1389,7 +1486,7 @@ html.courtyard-mobile-device nav{
 html.courtyard-mobile-device nav::-webkit-scrollbar{display:none;}
 html.courtyard-mobile-device nav button{
   flex:0 0 auto; min-height:38px; padding:9px 2px 8px;
-  font-size:.68rem; letter-spacing:.11em; white-space:nowrap;
+  font-size:.68rem; letter-spacing:.05em; white-space:nowrap;
 }
 html.courtyard-mobile-device main{width:100%; min-height:calc(100dvh - 58px);}
 html.courtyard-mobile-device .hero{width:100%; max-width:600px; padding:72px 18px 16px;}

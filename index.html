@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kanha Ji's Courtyard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="courtyard-app.css">
 
@@ -281,13 +281,35 @@
         </div>
         <div class="setting-row">
           <div>
-            <div class="setting-label">Time of day theme</div>
-            <div class="setting-desc">Choose the light your courtyard sits in</div>
+            <div class="setting-label">Theme</div>
+            <div class="setting-desc">Choose the light and palette your courtyard sits in</div>
           </div>
           <div class="theme-options">
             <button class="theme-dot active" style="background:#3B2A1C" data-theme="dusk" aria-label="Dusk" aria-pressed="true"></button>
             <button class="theme-dot" style="background:#160F0A" data-theme="night" aria-label="Night" aria-pressed="false"></button>
             <button class="theme-dot" style="background:#4A3520" data-theme="dawn" aria-label="Dawn" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#5B4A24" data-theme="dried-leaves" aria-label="Dried Leaves" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#8A6239" data-theme="sandalwood" aria-label="Sandalwood" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#3F4A2E" data-theme="forest-earth" aria-label="Forest Earth" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#A85332" data-theme="terracotta" aria-label="Terracotta" aria-pressed="false"></button>
+            <button class="theme-dot" style="background:#6A4128" data-theme="monsoon-soil" aria-label="Monsoon Soil" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Font size</div>
+            <div class="setting-desc" id="fontSizeDesc">Adjust text size across the whole Courtyard. Currently: Medium</div>
+          </div>
+          <div class="font-size-options" id="fontSizeOptions" role="group" aria-label="Font size">
+            <button class="font-size-dot" data-font-size="very-small" aria-label="Very Small" aria-pressed="false">VS</button>
+            <button class="font-size-dot" data-font-size="small" aria-label="Small" aria-pressed="false">S</button>
+            <button class="font-size-dot active" data-font-size="medium" aria-label="Medium" aria-pressed="true">M</button>
+            <button class="font-size-dot" data-font-size="large" aria-label="Large" aria-pressed="false">L</button>
+            <button class="font-size-dot" data-font-size="very-large" aria-label="Very Large" aria-pressed="false">VL</button>
+            <button class="font-size-dot" data-font-size="extra-large" aria-label="Extra Large" aria-pressed="false">XL</button>
+            <button class="font-size-dot" data-font-size="huge" aria-label="Huge" aria-pressed="false">H</button>
+            <button class="font-size-dot" data-font-size="very-huge" aria-label="Very Huge" aria-pressed="false">VH</button>
+            <button class="font-size-dot" data-font-size="maximum" aria-label="Maximum" aria-pressed="false">MAX</button>
           </div>
         </div>
         <div class="setting-row">
