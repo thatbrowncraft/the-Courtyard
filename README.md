@@ -1,189 +1,697 @@
-# Kanha Ji's Courtyard
+# 🪔 Kanha Ji's Courtyard
 
-A personal, non-commercial Bhagavad Gita companion — a quiet place to read a
-verse when things feel hard. No streaks, no badges, no "keep your habit
-going" pressure. Just the Gita, a warm courtyard, and Kanha Ji.
+> A quiet digital place to sit with the Bhagavad Gita.
 
-This is a static website (plain HTML/CSS/JavaScript, no build tools) hosted
-on GitHub Pages. As of Session 23 it's also an installable, offline-first
-Progressive Web App — once you've visited it over HTTPS, you can add it to
-your home screen, and it keeps working (including whatever chapters and
-ambience sounds you've already opened) without an internet connection.
+**Kanha Ji's Courtyard** is a personal, non-commercial Bhagavad Gita companion created by **ThatBrownCraft**.
+
+It is made for the moments when you do not necessarily want another productivity app, another habit tracker, or another notification asking you to "keep going."
+
+Sometimes you simply want to sit somewhere quiet, read a verse, breathe for a moment, reflect on it, and leave with a little more peace.
+
+That is what the Courtyard is for.
+
+There are no streaks.
+
+No badges.
+
+No points.
+
+No pressure to maintain a reading habit.
+
+Just the Gita, a quiet courtyard, gentle ambience, and a little space to be with yourself.
+
 
 ---
 
-## Installing / offline use
+# 🌿 What is the Courtyard?
 
-- Open the site once, over a real internet connection.
-- Your browser will offer to **install** it, or use the "Install the
-  Courtyard" row under Settings.
-- After that, opening it from your home screen launches full-screen, no
-  browser bar.
-- Any chapter you've read once, and any ambience sound you've played once,
-  keeps working without internet from then on.
-- If you're offline, you'll see a quiet note instead of a browser error;
-  when a new version of the site is deployed, a small banner offers to
-  refresh whenever you're ready — nothing updates without you tapping it.
+The Courtyard is built around one simple idea:
 
-**How updates reach your device:** the app uses a smarter update flow so
-new deployments show up promptly instead of getting stuck behind an old
-cache. Every launch checks GitHub for a newer Service Worker automatically.
-The app shell (the page itself, its styling, and its behavior) uses a
-`networkFirst` strategy: while you're online, it always fetches the latest
-deployed version and quietly keeps a copy for later; if you happen to open
-the app without a connection, it falls back to that last cached copy so
-nothing breaks. Chapters and ambience sounds still work the way they
-always have — cached the first time you open them, so they're available
-offline from then on. The end result is that a newly deployed feature (a
-new chapter, a fix, a small improvement) should appear the next time you
-open the app with a connection, without you ever needing to manually clear
-your cache.
+**The Bhagavad Gita should feel like something you can return to whenever you need it, not another task you have to complete.**
+
+You can open it when you are:
+
+- overwhelmed
+- anxious
+- angry
+- lost
+- looking for peace
+- simply in the mood to read
+
+From there, you can explore the Gita at your own pace.
+
+You can read chapters and verses, search for something specific, explore collections, write in a private journal, spend time in quieter spaces, explore the Journey, adjust the atmosphere and appearance, or simply read without doing anything else.
+
+The Courtyard is a **companion to the Gita, not a replacement for it**.
+
+The original scripture remains the heart of the experience.
+
 
 ---
 
-## Your Journal, and backing it up
+# ✨ Features
 
-The Journal is private by design: entries are written to this device only,
-never uploaded, never synced to any account, never tracked. There's no
-sign-in anywhere in the Courtyard, and the Journal doesn't change that.
+## 📖 Bhagavad Gita Reading
 
-Because entries live only in this browser's local storage, clearing your
-site data — or moving to a new phone or computer — will lose them, with no
-way to recover them from anywhere else. To make that a choice rather than
-an accident, Settings has a **Your Journal** section:
+The Courtyard contains the complete structure of the **18 chapters of the Bhagavad Gita**, with verse content organized chapter by chapter.
 
-- **Export Journal** downloads every entry, with its original timestamp, as
-  a single file named like `kanha-ji-journal-2026-07-15.json`. Keep it
-  wherever you'd keep any personal file — this app never sees it again
-  unless you bring it back.
-- **Import Journal** lets you choose a previously exported file and restore
-  it. You'll be asked to confirm first, since importing replaces whatever
-  journal is currently on this device. If the file isn't a valid Courtyard
-  backup, you'll see a plain explanation instead of an error — nothing
-  breaks, and nothing on the device changes.
+The reading experience is intentionally calm and uncluttered.
 
-If you haven't written anything yet, Export stays disabled with a note
-that there's nothing to export.
+You can:
 
-This is a manual, one-file, one-device-to-another process — there is no
-automatic sync, no cloud storage, and no account behind it. That's
-intentional.
+- browse all 18 chapters
+- open individual chapters
+- read verses at your own pace
+- move between sections without losing your place
+- return to the main Courtyard whenever you want
+
+The interface is designed to keep the actual reading experience at the center rather than surrounding it with unnecessary gamification.
+
 
 ---
 
-## Navigation, and the About page
+## 🔎 Search
 
-The header (brand mark, nav links) stays fixed at the top of the screen as
-you scroll — it was already built this way (a `position: sticky` header)
-— and now stays visible on every screen, including while reading a single
-verse. Only the sound control recedes there, so the reading itself still
-gets the quiet, uncluttered focus that was intended; the way back to the
-rest of the Courtyard never disappears now, since readers move between
-Chapters, Journal, Search, and everywhere else often enough mid-read that
-hiding the nav there was more friction than atmosphere.
+The Courtyard includes search so you can find something without having to manually browse through every chapter.
 
-**About** is a new entry in that nav, alongside Home, Chapters, Search,
-Collections, Journal, Meditation, Journey, and Settings. It's a read-only
-page — no Storage, no settings to change — split into a few quiet sections,
-meant to read like chapters of the same book rather than a settings screen:
+Search can help when you remember:
 
-- **Application** — app name, the current version (read live from
-  `config.json`, so it never needs hand-editing here when the version
-  bumps), and who made it.
-- **About this Project** — a short, plain explanation that the Courtyard
-  is a companion to the Gita, not a replacement for it.
-- **A Small Note** — a brief, warm reminder that the Gita itself is the
-  point; the Courtyard is only one more quiet place to sit with it, and
-  is glad to be left behind the moment someone picks up the original.
-- **Copyright & Attribution** — the original Sanskrit verses and public-
-  domain translations remain part of the scripture's own heritage. The
-  reflections, modern interpretations, historical/contextual commentary,
-  "If Kanha Ji sat beside you today…" passages, reflection questions,
-  journal prompts, the Courtyard's own concept, experience, UI, and
-  original writing are original work, © ThatBrownCraft. Written warmly,
-  not like legal boilerplate — see `index.html`'s `#view-about` if you
-  want the exact wording.
-- **Privacy** — a one-line reminder of what's already true elsewhere in
-  this README: journal entries stay on-device and are never uploaded,
-  tracked, or shared unless you export them yourself.
-- **Credits**, and a closing signoff at the bottom of the page — a short
-  farewell, a "Made with 🤎" signature, and one last, smaller line
-  underneath it, meant to feel like the quiet last page of a book rather
-  than a settings screen or a piece of documentation.
+- a word
+- a phrase
+- a theme
+- an idea
+- or simply want to find verses related to something on your mind
 
-Nothing about routing, caching, or offline support changed to add this —
-About is just another `KNOWN_SIMPLE_VIEWS` entry, same as Journal or
-Settings, and its markup, styling, and file list were already precached
-by the existing service worker.
+The goal is to make the Gita easier to return to when you already know what you are looking for.
+
 
 ---
 
-## Adding ambience sounds (no coding needed)
+## 🗂️ Collections
 
-The Courtyard plays soft background ambience — temple bells, a flute, a
-river — that you can pick from a small menu. Adding a new one is fully
-automatic:
+Collections provide another way to explore meaningful parts of the Courtyard.
 
-1. Go to the `assets/audio/` folder in this repository.
-2. Click **Add file → Upload files**, and upload your new `.mp3`.
-3. Click **Commit changes**.
+Instead of forcing everything into one fixed reading order, Collections allow different verses, ideas, reflections, and themes to be explored together.
 
-That's it. Within a minute or two:
-- A GitHub Action automatically updates `assets/audio/audio.json` (the file
-  that tells the app which ambiences exist).
-- GitHub Pages redeploys the site.
-- Your new ambience appears in the app's sound menu, ready to play.
+They are intended to make returning to something meaningful easier without turning the experience into a checklist.
 
-You never need to write or edit any code for this. If you want a nicer
-display name than the one guessed from your filename (e.g. you uploaded
-`govindam_adi_purusham.mp3` and want it to read "Govindam Adi Purusham"
-exactly), open `assets/audio/audio.json` afterward and edit the `"name"`
-text for that entry — everything else can stay untouched.
-
-**Removing** an ambience works the same way in reverse: delete the MP3 from
-`assets/audio/`, commit, and it disappears from the menu on its own.
-
-**Replacing** one: upload a new file with the exact same name as the one
-you're replacing (e.g. a new `river.mp3` over the old one) — no manifest
-change needed at all.
 
 ---
 
-## Project structure
+## 📓 Private Journal
 
-```
-kanha-jis-courtyard/
-  .github/workflows/
-    audio-manifest.yml     — auto-updates the ambience menu (see above)
-  index.html               — page structure
-  styles.css               — all visual styling
-  app.js                   — all app behavior
-  config.json              — app-level settings
-  manifest.webmanifest     — PWA install metadata (name, icons, colors)
-  service-worker.js        — offline caching (app shell, chapters, ambience)
-  pwa.js                   — install prompt + offline/update banners
-  data/
-    chapters.json          — list of all 18 chapters
-    chapter-01.json, ...   — verse content, one file per chapter
-  assets/
-    audio/                 — ⭐ drop new ambience MP3s here
-      audio.json           — auto-generated list of ambiences (don't hand-edit)
-      generate_audio_manifest.py — the script the GitHub Action runs for you
-    icons/                 — PWA icon set (diya glyph, several sizes)
-    images/                — reserved for future use
-```
+The Journal is one of the most personal parts of the Courtyard.
+
+You can write down:
+
+- thoughts after reading a verse
+- personal reflections
+- things you are feeling
+- questions
+- lessons you want to remember
+- moments you want to return to later
+
+### 🔐 Your Journal stays on your device.
+
+There is:
+
+- no account
+- no sign-in
+- no cloud journal
+- no automatic synchronization
+- no journal analytics
+- no journal uploaded to a server
+
+Journal entries are stored locally in the browser.
+
+This is intentional.
+
+### Journal Backup
+
+Because local data can be lost if browser/site data is cleared or you move to another device, the Courtyard provides manual backup tools.
+
+### Export Journal
+
+Downloads your journal as a JSON file containing your entries and their original timestamps.
+
+Example:
+
+    kanha-ji-journal-2026-07-15.json
+
+Keep the exported file wherever you keep your personal files.
+
+The Courtyard does not receive or store it.
+
+### Import Journal
+
+Allows a previously exported journal file to be restored on another device or browser.
+
+Import requires confirmation because it replaces the journal currently stored on that device.
+
+If the selected file is not a valid Courtyard backup, the app explains the problem without changing the existing journal.
+
+This is intentionally a **manual, local backup system**.
+
+There is no automatic cloud synchronization.
+
 
 ---
 
-## Running this locally
+# 🧘 Meditation & Quiet Spaces
 
-Because the app loads its content from JSON files, it needs to be served
-over a real (even if local) web server — opening `index.html` by
-double-clicking it won't work in most browsers.
+The Courtyard also contains quieter spaces intended for slowing down, breathing, reflecting, and simply being present.
 
-```
-python3 -m http.server 8000
-# then open http://localhost:8000/
-```
+These spaces are deliberately different from conventional productivity or wellness apps.
+
+You do not have to complete a session.
+
+You do not have to maintain a streak.
+
+You do not have to prove that you came back tomorrow.
+
+You can simply sit for a while.
 
 
+---
+
+# 🛤️ Journey
+
+The Journey section provides another way to explore the Courtyard and its ideas.
+
+It is intended to feel more like moving through a reflective experience than completing a checklist.
+
+The Courtyard does not treat spiritual exploration as a game.
+
+There are no rewards for "finishing" it.
+
+You can explore at your own pace.
+
+
+---
+
+# 🎧 Ambient Sounds
+
+The Courtyard can play gentle background ambience while you read or explore.
+
+Ambience can include sounds such as:
+
+- temple bells
+- flute
+- river or water
+- other quiet environmental sounds
+
+The sound control is intentionally unobtrusive so that the reading remains the focus.
+
+### Offline ambience
+
+Once an ambience has been played, it can be cached by the Progressive Web App and remain available when offline.
+
+
+---
+
+# 🎨 Themes
+
+The Courtyard can be experienced through different visual palettes.
+
+The themes are designed around warm, earthy colours rather than bright or distracting interface styles.
+
+The project includes solid-colour palettes inspired by natural materials and the atmosphere of an old courtyard, including:
+
+- **Dried Leaves**
+- **Sandalwood**
+- **Forest Earth**
+- **Terracotta**
+- **Monsoon Soil**
+
+The themes intentionally avoid:
+
+- excessive gradients
+- glassmorphism
+- glowing interfaces
+- distracting animated backgrounds
+- unnecessary visual effects
+
+The idea is for the interface to feel warm, grounded, and quiet rather than futuristic.
+
+
+---
+
+# 🔤 Font Size & Accessibility
+
+The Courtyard includes multiple font-size levels so that the reading experience can be adjusted to individual needs.
+
+There are **9 font-size levels**:
+
+1. Very Small
+2. Small
+3. Medium
+4. Large
+5. Very Large
+6. Extra Large
+7. Huge
+8. Very Huge
+9. Maximum
+
+The larger settings are intentionally available for users who need significantly larger text.
+
+The layout is designed to let larger text grow and wrap naturally rather than forcing text into a fixed space or clipping it.
+
+The selected font size is retained locally so the Courtyard can continue to feel comfortable when you return.
+
+
+---
+
+# 🪔 A Calm Interface
+
+The visual language of the Courtyard is intentionally different from conventional modern apps.
+
+The interface aims to feel:
+
+- warm
+- earthy
+- literary
+- quiet
+- readable
+- spacious
+- personal
+
+Decorative elements exist to create atmosphere, but they should never compete with the words being read.
+
+The goal is not to make the interface impressive.
+
+The goal is to make it comfortable to stay in.
+
+
+---
+
+# 🧭 Navigation
+
+The Courtyard's main sections are accessible through its navigation:
+
+- **Home**
+- **Chapters**
+- **Search**
+- **Collections**
+- **Journal**
+- **Meditation**
+- **Journey**
+- **Settings**
+- **About**
+
+The navigation is intentionally easy to reach while moving through the application.
+
+This is especially useful while reading.
+
+For example, someone may be reading a verse and suddenly want to:
+
+- search for another verse
+- write something in the Journal
+- explore another chapter
+- visit Collections
+- move somewhere else in the Courtyard
+
+The navigation should make that transition simple.
+
+The Courtyard is not meant to force users through one fixed path.
+
+
+---
+
+# ⚙️ Settings & Personalization
+
+Settings allows the Courtyard to be adjusted to the person using it.
+
+This includes options such as:
+
+- ambience preferences
+- reduced animation
+- visual theme
+- font size
+- Journal backup and restoration
+- other Courtyard preferences
+
+### Reduced Animation
+
+Reduced Animation provides a calmer experience by reducing or disabling certain moving visual effects such as drifting light, mist, and flickering.
+
+This allows the atmosphere to remain without requiring the animated effects.
+
+### Personalization
+
+The goal of Settings is not to turn the Courtyard into a heavily configurable application.
+
+Instead, it provides a few meaningful controls that allow the space to feel more comfortable for the person using it.
+
+
+---
+
+# ℹ️ About
+
+The About section explains the project itself.
+
+It includes information about:
+
+- the application
+- the project
+- the relationship between the Courtyard and the Gita
+- privacy
+- copyright and attribution
+- credits
+
+The About page is intentionally read-only.
+
+It is designed to feel like another quiet part of the Courtyard rather than a technical settings screen.
+
+
+---
+
+# 📱 Progressive Web App
+
+Kanha Ji's Courtyard is an installable **Progressive Web App (PWA)**.
+
+Once visited over HTTPS, it can be installed on a compatible device and opened from the home screen like an application.
+
+The installed version provides a more app-like experience without requiring a separate native Android or iOS application.
+
+The same Courtyard can therefore exist as:
+
+- a normal website in a browser
+- an installed PWA on a phone
+- an offline-capable application experience
+
+The PWA is designed to provide a phone-first experience while keeping the underlying project simple and web-based.
+
+
+---
+
+# 📡 Offline-First Experience
+
+The Courtyard does not require a constant internet connection for everything.
+
+The Service Worker keeps important resources available locally.
+
+This includes:
+
+- the application shell
+- previously opened chapters
+- previously played ambience
+- required interface resources
+
+If the Courtyard is opened without an internet connection, it can fall back to the most recently cached version instead of simply showing a browser error.
+
+Previously opened chapters and ambience can therefore remain available even when the device is offline.
+
+
+---
+
+# 🔄 Updates
+
+The Courtyard uses an update flow designed to avoid leaving users trapped on an old cached version.
+
+When a new version is deployed:
+
+- the app checks for the newer version
+- the latest application shell is fetched while online
+- a local copy is retained for offline use
+- the user can be offered an update when one is available
+- nothing updates without the appropriate user action
+
+The goal is simple:
+
+**new versions should reach users without requiring them to manually clear browser caches.**
+
+The Service Worker handles the application's offline resources and update flow.
+
+
+---
+
+# 🔒 Privacy
+
+Privacy is a core design principle of the Courtyard.
+
+There is no user account system.
+
+There is no requirement to sign in.
+
+The Journal is stored locally on the device.
+
+The project does not require a personal profile in order to function.
+
+In particular, the Courtyard does not use an account system to synchronize private Journal entries between devices.
+
+If you export your Journal, the resulting backup file is under your control.
+
+The Courtyard only receives it again if you deliberately choose to import it.
+
+
+---
+
+# 🚫 What the Courtyard Deliberately Does NOT Do
+
+The project intentionally avoids many patterns commonly used to increase engagement.
+
+There are no:
+
+- 🔥 reading streaks
+- 🏆 badges
+- ⭐ points
+- 📈 productivity scores
+- ⏰ "don't break your streak" pressure
+- ❤️ engagement pressure
+- 👤 mandatory accounts
+- ☁️ automatic Journal cloud syncing
+- 📊 reading leaderboards
+
+The Courtyard is not trying to make you use it every day.
+
+If it helps you today, it has done its job.
+
+
+---
+
+# 🕊️ The Philosophy Behind the Project
+
+The Courtyard is intentionally a **companion**, not an authority.
+
+The Gita itself is the important part.
+
+The Courtyard adds:
+
+- a place to read
+- a place to reflect
+- a place to write
+- a place to search
+- a little ambience
+- a little quiet
+
+Its reflections, modern interpretations, contextual material, journal prompts, questions, and original writing belong to the Courtyard's own creative layer.
+
+They are not intended to replace the scripture itself.
+
+The original Gita remains at the center.
+
+
+---
+
+# 🛠️ Technology
+
+Kanha Ji's Courtyard is deliberately simple at its technical foundation.
+
+It is a static web application built with:
+
+- HTML
+- CSS
+- JavaScript
+- JSON
+
+There is no traditional build system required.
+
+The project is hosted through **GitHub Pages**.
+
+The application uses a Service Worker for its offline and PWA functionality.
+
+
+---
+
+# 📁 Project Structure
+
+    kanha-jis-courtyard/
+
+    ├── .github/
+    │   └── workflows/
+    │       └── audio-manifest.yml
+    │           Automatically updates the ambience manifest
+    │
+    ├── index.html
+    │   Main application structure and views
+    │
+    ├── styles.css
+    │   Main visual styling, themes, typography,
+    │   accessibility sizing, and responsive layout
+    │
+    ├── app.js
+    │   Main application behaviour and interactions
+    │
+    ├── config.json
+    │   Application-level configuration and version information
+    │
+    ├── manifest.webmanifest
+    │   PWA installation metadata, icons, colours, etc.
+    │
+    ├── service-worker.js
+    │   Offline caching and PWA resource management
+    │
+    ├── pwa.js
+    │   Installation prompts and offline/update messaging
+    │
+    ├── data/
+    │   ├── chapters.json
+    │   │   Chapter index
+    │   │
+    │   ├── chapter-01.json
+    │   ├── chapter-02.json
+    │   ├── ...
+    │   └── chapter-18.json
+    │       Verse content for each chapter
+    │
+    └── assets/
+        ├── audio/
+        │   ├── audio.json
+        │   │   Generated ambience list
+        │   │
+        │   └── generate_audio_manifest.py
+        │       Generates the ambience manifest
+        │
+        ├── icons/
+        │   PWA icon set
+        │
+        └── images/
+            Reserved for image assets
+
+
+---
+
+# 🎧 Adding a New Ambience
+
+Adding a new ambience does not require changing the application code.
+
+### 1. Open
+
+    assets/audio/
+
+### 2. Upload an `.mp3` file.
+
+For example:
+
+    govindam_adi_purusham.mp3
+
+### 3. Commit the change.
+
+The GitHub Action automatically updates the ambience manifest.
+
+After GitHub Pages redeploys, the new ambience becomes available in the Courtyard.
+
+### Changing the Display Name
+
+If the automatically generated name is not what you want, the corresponding `"name"` value in:
+
+    assets/audio/audio.json
+
+can be adjusted.
+
+Everything else can remain untouched.
+
+### Removing an Ambience
+
+Delete the MP3 and commit the change.
+
+The ambience will disappear from the menu after the manifest is regenerated.
+
+### Replacing an Ambience
+
+Upload a replacement file using the exact same filename.
+
+No application code or manifest configuration needs to be changed manually.
+
+
+---
+
+# 💻 Running the Courtyard Locally
+
+Because the application loads JSON files, it should be served through a web server rather than opened directly using `file://`.
+
+For a simple local server:
+
+    python3 -m http.server 8000
+
+Then open:
+
+    http://localhost:8000/
+
+
+---
+
+# 🌐 Deployment
+
+The project is designed to work as a static site.
+
+The production version is hosted through GitHub Pages.
+
+A normal deployment consists of updating the repository and allowing GitHub Pages to publish the changes.
+
+The Service Worker handles the application's offline resources and update flow.
+
+
+---
+
+# 🤎 Credits & Attribution
+
+Kanha Ji's Courtyard is an original project by **ThatBrownCraft**.
+
+The original Sanskrit scripture belongs to the heritage of the Bhagavad Gita.
+
+Public-domain translations may be included where applicable.
+
+The Courtyard's own:
+
+- concept
+- interface
+- visual experience
+- reflections
+- modern interpretations
+- contextual writing
+- "If Kanha Ji sat beside you today…" passages
+- reflection questions
+- journal prompts
+- original application writing
+
+are original creative work associated with ThatBrownCraft.
+
+Copyright and attribution information is also available inside the application's About section.
+
+
+---
+
+# 🪔 A Final Note
+
+The Courtyard was never created to become another place where you feel obligated to perform.
+
+You do not have to finish every chapter.
+
+You do not have to write every day.
+
+You do not have to maintain anything.
+
+You can open it for one verse.
+
+Stay for five minutes.
+
+Write one sentence.
+
+Sit quietly.
+
+Or simply close it and pick up the actual Gita.
+
+If the Courtyard helps you find your way back to Krishna, to the Gita, or even just to a quieter moment within yourself, then it has served its purpose.
+
+**Made with 🤎 by ThatBrownCraft.**
