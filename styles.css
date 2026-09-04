@@ -777,12 +777,17 @@
   .theme-dot.active{ border-color:var(--ivory); box-shadow:0 0 0 3px rgba(241,227,198,0.08); }
 
   /* ---------- font size (accessibility) ---------- */
-  .font-size-options{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; max-width:230px; }
+  /* Fixed 5-column grid (not ad-hoc flex-wrap) so the 9 options always
+     break into two clean, evenly spaced rows — 5 then 4 — with every box
+     the same width, instead of wrapping wherever the previous box happened
+     to end (that's what left MAX stranded, undersized, on its own line). */
+  .font-size-options{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; max-width:230px; }
   .font-size-dot{
-    flex:0 0 auto; min-width:34px; height:30px; padding:0 8px;
+    display:flex; align-items:center; justify-content:center;
+    width:100%; min-width:34px; height:30px; padding:0 6px; box-sizing:border-box;
     background:transparent; color:var(--ivory-dim); border:1px solid var(--line); border-radius:0;
     font-family:var(--font-ui-action); font-weight:600; font-size:0.68rem; letter-spacing:0.02em;
-    cursor:pointer; transition:all 0.3s var(--ease);
+    white-space:nowrap; cursor:pointer; transition:all 0.3s var(--ease);
   }
   .font-size-dot:hover, .font-size-dot:focus-visible{ border-color:var(--gold-soft); color:var(--gold-bright); }
   .font-size-dot.active{ border-color:var(--gold); color:var(--gold-bright); background:rgba(192,138,62,0.09); }
@@ -790,7 +795,7 @@
      squeezing on narrow screens — the label/description keep their normal
      width, only this particular control wraps onto its own line. */
   .setting-row:has(.font-size-options){ flex-wrap:wrap; row-gap:14px; }
-  .setting-row:has(.font-size-options) .font-size-options{ width:100%; max-width:100%; justify-content:flex-start; }
+  .setting-row:has(.font-size-options) .font-size-options{ width:100%; max-width:100%; }
 
   /* ---------- meditation ---------- */
   .breath-circle{

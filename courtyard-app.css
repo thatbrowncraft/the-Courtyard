@@ -45,10 +45,17 @@ html.courtyard-app-mode body{
    applied unconditionally in app mode instead of behind a width check
    that a desktop-site viewport can defeat. */
 html.courtyard-app-mode nav{
-  justify-content:flex-start;
-  overflow-x:auto;
-  gap:16px;
-  -webkit-overflow-scrolling:touch;
+  /* All 9 sections visible at once, no horizontal scroll: styles.css's own
+     mobile nav rule sets flex-wrap:nowrap + overflow-x:auto for this exact
+     selector (that's the scrollable row being reported); this override
+     wins on specificity and turns it into wrapped, centered rows instead.
+     Nothing else about the buttons — order, click handlers, active state —
+     changes. */
+  flex-wrap:wrap;
+  justify-content:center;
+  overflow-x:hidden;
+  row-gap:10px;
+  column-gap:16px;
 }
 html.courtyard-app-mode nav button{
   font-size:0.66rem;
